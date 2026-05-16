@@ -123,9 +123,9 @@ class Router
             $uri = substr($uri, 0, $pos);
         }
 
-        // Remove base path if app is in subdirectory
+        // Remove base path if app is in subdirectory (case-insensitive)
         $basePath = parse_url(BASE_URL, PHP_URL_PATH) ?? '';
-        if ($basePath && strpos($uri, $basePath) === 0) {
+        if ($basePath && stripos($uri, $basePath) === 0) {
             $uri = substr($uri, strlen($basePath));
         }
 
