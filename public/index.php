@@ -76,6 +76,15 @@ $router->post('/inventory/delete/{id}', 'inventory/controllers/DeleteProductCont
 $router->get('/api/inventory/search', 'inventory/api/search.php'); // Inventory search API
 $router->get('/api/inventory/check-sku', 'inventory/api/check-sku.php'); // SKU availability check API
 
+// Finance Module Routes
+$router->get('/finance', 'finance/index.php'); // Finance dashboard
+$router->post('/finance/record-income', 'finance/controllers/RecordIncomeController.php'); // Record income transaction
+$router->post('/finance/record-expense', 'finance/controllers/RecordExpenseController.php'); // Record expense transaction
+
+// Sales Module Routes
+$router->get('/sales', 'sales/index.php'); // Main sales dashboard
+$router->post('/sales/checkout', 'sales/controllers/ProcessSaleController.php'); // Process sale checkout
+$router->get('/sales/orders/{id}', 'sales/controllers/ViewInvoiceController.php'); // View specific invoice
 // ============================================================================
 // 3. OUTPUT BUFFERING EXECUTION
 // ============================================================================
@@ -112,6 +121,8 @@ $pageTitle = APP_NAME;
 
 if (strpos($requestUri, '/inventory') !== false) {
     $pageTitle = 'Inventory Management - ' . APP_NAME;
+} elseif (strpos($requestUri, '/finance') !== false) {
+    $pageTitle = 'Finance Dashboard - ' . APP_NAME;
 } elseif ($requestUri === '/' || strpos($requestUri, '/home') !== false) {
     $pageTitle = 'Dashboard - ' . APP_NAME;
 }
@@ -150,10 +161,24 @@ if (strpos($requestUri, '/inventory') !== false) {
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/inventory" 
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/inventory"
                            class="nav-link <?php echo (strpos($requestUri, '/inventory') !== false) ? 'active' : ''; ?>">
                             <span class="nav-icon">📦</span>
                             <span class="nav-text">Inventory</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/finance"
+                           class="nav-link <?php echo (strpos($requestUri, '/finance') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">Finance</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/sales"
+                           class="nav-link <?php echo (strpos($requestUri, '/sales') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">Sales</span>
                         </a>
                     </li>
                 </ul>

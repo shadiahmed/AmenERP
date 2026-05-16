@@ -1240,3 +1240,278 @@ body.modal-open {
 }
 
 /* Made with Bob */
+
+/* ============================================================================
+   Finance Module Styles
+   ============================================================================ */
+
+/* Finance Actions Container */
+.finance-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .finance-actions {
+    flex-direction: column;
+  }
+}
+
+/* Finance Amount Display */
+.finance-amount {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Modal Body Padding */
+.modal-body {
+  padding: var(--space-lg);
+}
+
+/* Form Actions in Modal */
+.form-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+  margin-top: var(--space-xl);
+}
+
+@media (max-width: 768px) {
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .form-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Made with Bob */
+
+
+/* ============================================================================
+   SALES MODULE STYLES
+   ============================================================================ */
+
+/* Sales Module Layout */
+.sales-module .form-section {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-xl);
+}
+
+.sales-module .form-description {
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+}
+
+.sales-module .module-subtitle {
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-sm);
+}
+
+/* Sale Items Section */
+.sale-items-section {
+    margin-top: var(--spacing-xl);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.sale-item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-light);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-md);
+    align-items: end;
+}
+
+.sale-item-row .form-group {
+    margin-bottom: 0;
+}
+
+.item-actions {
+    display: flex;
+    align-items: flex-end;
+}
+
+.stock-info {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.stock-valid {
+    color: var(--color-success);
+}
+
+.stock-invalid {
+    color: var(--color-error);
+}
+
+/* Total Section */
+.total-section {
+    background: #e8f5e9;
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    margin-top: var(--spacing-md);
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-label {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.total-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-success);
+}
+
+/* Form Actions */
+.btn-large {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: 1.125rem;
+}
+
+.btn-icon {
+    margin-right: var(--spacing-sm);
+}
+
+/* Table Styles */
+.sales-module .amount {
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+.sales-module .table-section {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.sales-module .empty-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-muted);
+}
+
+/* Responsive Design for Sales Module */
+@media (max-width: 768px) {
+    .sale-item-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .item-actions {
+        justify-content: flex-start;
+    }
+
+    .total-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .sales-module .form-actions {
+        flex-direction: column;
+    }
+
+    .sales-module .form-actions .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .total-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Made with Bob */
+
+
+/* ============================================================================
+   INVOICE VIEW STYLES
+   ============================================================================ */
+
+.invoice-view .module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.invoice-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.detail-item strong {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.detail-item span {
+    font-size: 1.125rem;
+}
+
+.data-table tfoot {
+    font-weight: 600;
+    background: var(--color-bg-light);
+}
+
+.data-table tfoot td {
+    padding: var(--spacing-md);
+    border-top: 2px solid var(--color-border);
+}
+
+/* Print Styles */
+@media print {
+    .btn, 
+    .module-header a, 
+    .form-actions,
+    .sidebar,
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .invoice-view {
+        max-width: 100%;
+    }
+}
+
+/* Made with Bob */

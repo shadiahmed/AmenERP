@@ -240,6 +240,106 @@
     `;
     document.head.appendChild(style);
     
+    
+    /**
+     * ========================================================================
+     * Finance Module - Modal Management
+     * ========================================================================
+     */
+    
+    /**
+     * Initialize finance module modals
+     */
+    function initFinanceModals() {
+        // Event delegation for modal triggers
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+            
+            const action = target.getAttribute('data-action');
+            
+            switch(action) {
+                case 'open-expense-modal':
+                    openModal('expenseModal');
+                    break;
+                case 'close-expense-modal':
+                    closeModal('expenseModal');
+                    break;
+                case 'open-income-modal':
+                    openModal('incomeModal');
+                    break;
+                case 'close-income-modal':
+                    closeModal('incomeModal');
+                    break;
+            }
+        });
+        
+        // Close modals when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
+        });
+        
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+    }
+    
+    /**
+     * Open a modal by ID
+     */
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        modal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+        
+        // Focus first input field
+        const firstInput = modal.querySelector('input:not([type="hidden"]), select, textarea');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+    }
+    
+    /**
+     * Close a modal by ID
+     */
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        modal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        
+        // Reset form if exists
+        const form = modal.querySelector('form');
+        if (form) {
+            form.reset();
+        }
+    }
+    
+    /**
+     * Close all open modals
+     */
+    function closeAllModals() {
+        const modals = document.querySelectorAll('.modal:not(.hidden)');
+        modals.forEach(function(modal) {
+            closeModal(modal.id);
+        });
+    }
+    
+    // Initialize finance modals when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFinanceModals);
+    } else {
+        initFinanceModals();
+    }
+
 })();
 
 // Made with Bob
