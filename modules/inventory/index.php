@@ -428,6 +428,7 @@ foreach ($products as $product) {
     // ES6 Module Script - Inventory Module with Real-Time Search
     (() => {
         'use strict';
+        const baseUrl = '<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>';
 
         // ============================================================================
         // MODAL MANAGEMENT

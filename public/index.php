@@ -69,6 +69,7 @@ $router = new Router();
  * Routes point to module view files relative to MODULES_PATH
  */
 $router->get('/', 'home/index.php');           // Dashboard overview
+$router->get('/home', 'home/index.php');      // Dashboard alias for internal navigation
 $router->get('/inventory', 'inventory/index.php'); // Inventory management
 $router->post('/inventory/add', 'inventory/controllers/AddProductController.php'); // Add new product
 $router->post('/inventory/edit/{id}', 'inventory/controllers/EditProductController.php'); // Edit existing product
@@ -85,6 +86,35 @@ $router->post('/finance/record-expense', 'finance/controllers/RecordExpenseContr
 $router->get('/sales', 'sales/index.php'); // Main sales dashboard
 $router->post('/sales/checkout', 'sales/controllers/ProcessSaleController.php'); // Process sale checkout
 $router->get('/sales/orders/{id}', 'sales/controllers/ViewInvoiceController.php'); // View specific invoice
+
+// Procurement Module Routes
+$router->get('/procurement', 'procurement/index.php'); // Main procurement dashboard
+$router->get('/procurement/orders', 'procurement/controllers/ProcessPurchaseController.php'); // View all procurement orders
+$router->get('/procurement/orders/{id}', 'procurement/controllers/ProcessPurchaseController.php'); // View specific procurement order
+$router->post('/procurement/orders', 'procurement/controllers/ProcessPurchaseController.php'); // Place a new procurement order
+$router->post('/procurement/orders/{id}', 'procurement/controllers/ProcessPurchaseController.php'); // Place a new procurement order
+
+// HR & PAYROLL MODULE ROUTES
+$router->get('/hr', 'hr/index.php'); // Main HR dashboard
+$router->get('/hr/employees', 'hr/controllers/EmployeesController.php'); // View all employees
+$router->get('/hr/employees/new', 'hr/controllers/EmployeesController.php'); // Create new employee
+$router->get('/hr/employees/{id}', 'hr/controllers/EmployeesController.php'); // View specific employee
+$router->post('/hr/employees', 'hr/controllers/EmployeesController.php'); // Create new employee
+$router->post('/hr/employees/{id}', 'hr/controllers/EmployeesController.php'); // Update employee
+$router->get('/hr/payroll', 'hr/controllers/PayrollController.php'); // View payroll
+$router->get('/hr/payroll/new', 'hr/controllers/PayrollController.php'); // Create new payroll
+$router->get('/hr/payroll/{id}', 'hr/controllers/PayrollController.php'); // View specific payroll
+
+$router->post('/hr/payroll/process', 'hr/controllers/ProcessPayrollController.php'); // Process payroll
+
+// B2B CUSTOMER ACCOUNTS & RECEIVABLES ROUTES
+$router->get('/customers', 'customers/index.php'); // View all customers
+$router->post('/customers/payment/process', 'customers/controllers/ProcessPaymentController.php'); // Process payment
+$router->post('/customers/process-payment', 'customers/controllers/ProcessPaymentController.php'); // Process payment alias for customer form
+
+
+
+
 // ============================================================================
 // 3. OUTPUT BUFFERING EXECUTION
 // ============================================================================
@@ -139,6 +169,8 @@ if (strpos($requestUri, '/inventory') !== false) {
     
     <!-- Global Stylesheet (Zero-Framework CSS) -->
     <link rel="stylesheet" href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/css/dashboard.css">
+
 </head>
 <body>
     <!-- Enterprise Admin Interface Layout Grid -->
@@ -181,6 +213,43 @@ if (strpos($requestUri, '/inventory') !== false) {
                             <span class="nav-text">Sales</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/procurement"
+                           class="nav-link <?php echo (strpos($requestUri, '/procurement') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">Procurement</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/hr"
+                           class="nav-link <?php echo (strpos($requestUri, '/hr') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">HR</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/customers"
+                           class="nav-link <?php echo (strpos($requestUri, '/customers') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">Customers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/reports"
+                           class="nav-link <?php echo (strpos($requestUri, '/reports') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/settings"
+                           class="nav-link <?php echo (strpos($requestUri, '/settings') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">Settings</span>
+                        </a>
+                    </li>
+
+
                 </ul>
             </nav>
         </aside>
@@ -204,6 +273,7 @@ if (strpos($requestUri, '/inventory') !== false) {
     
     <!-- Global JavaScript (Zero-Framework ES6+) -->
     <script src="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/js/main.js" type="module"></script>
+    <script src="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/js/hr-payroll.js" type="module"></script>
 </body>
 </html>
 <?php

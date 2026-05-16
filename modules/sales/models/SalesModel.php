@@ -10,13 +10,14 @@ declare(strict_types=1);
  * - Creates sales orders and line items
  * - Updates inventory stock levels automatically
  * - Records financial transactions directly (double-entry bookkeeping)
+ * - Integrates with Customer Accounts & Receivables for credit sales
  *
  * All operations are wrapped in a single database transaction to ensure data integrity.
  * If any step fails, the entire operation is rolled back.
  *
  * @package AmenERP\Modules\Sales
  * @author Bob
- * @version 1.0.1
+ * @version 2.0.0
  */
 class SalesModel
 {
@@ -42,6 +43,13 @@ class SalesModel
     private const CASH_ACCOUNT_ID = 1;
 
     /**
+     * Accounts Receivable account ID (for credit sales)
+     *
+     * @var int
+     */
+    private const ACCOUNTS_RECEIVABLE_ACCOUNT_ID = 5;
+
+    /**
      * Constructor
      * Initializes database connection
      */
@@ -60,13 +68,15 @@ class SalesModel
      * Action C: Record financial transaction via FinanceModel
      * 
      * All operations are wrapped in a database transaction. If any step fails
-     * (e.g., insufficient stock, database error), the entire operation is rolled back.
+     * (e.g., insufficient stock, database error, credit limit exceeded), the entire 
+     * operation is rolled back.
      * 
      * @param string $customerName Customer or buyer name
      * @param array<int, array<string, mixed>> $items Array of items with keys:
      *                                                - product_id: Product ID (int)
      *                                                - quantity: Quantity to sell (int)
      *                                                - unit_price: Price per unit (float)
+     * @param int|null $customerId Optional customer ID for credit sales (B2B)
      * @param int|null $cashAccountId Optional cash account ID (defaults to CASH_ACCOUNT_ID)
      * @return array<string, mixed> Result array with keys:
      *                              - success: bool
@@ -76,11 +86,17 @@ class SalesModel
      * @throws PDOException If database operation fails
      * 
      * @example
+     * // Cash sale
      * $model = new SalesModel();
      * $result = $model->createSalesOrder('John Doe', [
      *     ['product_id' => 1, 'quantity' => 2, 'unit_price' => 50.00],
      *     ['product_id' => 3, 'quantity' => 1, 'unit_price' => 150.00]
      * ]);
+     * 
+     * // Credit sale
+     * $result = $model->createSalesOrder('ABC Trading Company', [
+     *     ['product_id' => 1, 'quantity' => 10, 'unit_price' => 50.00]
+     * ], 1); // Customer ID 1
      * 
      * if ($result['success']) {
      *     echo "Order created: " . $result['invoice_number'];
@@ -91,6 +107,7 @@ class SalesModel
     public function createSalesOrder(
         string $customerName,
         array $items,
+        ?int $customerId = null,
         ?int $cashAccountId = null
     ): array {
         // Use default cash account if not specified
@@ -140,6 +157,49 @@ class SalesModel
                 $totalAmount += $lineTotal;
             }
 
+            // If this is a credit sale, verify customer credit limit
+            if ($customerId !== null) {
+                $customerSql = "
+                    SELECT 
+                        id,
+                        customer_code,
+                        company_name,
+                        credit_limit,
+                        outstanding_balance,
+                        status
+                    FROM customers
+                    WHERE id = :customer_id
+                    FOR UPDATE
+                ";
+
+                $customerStmt = $this->db->query($customerSql, ['customer_id' => $customerId]);
+                $customer = $customerStmt->fetch();
+
+                if (!$customer) {
+                    throw new Exception("Customer ID {$customerId} not found");
+                }
+
+                // Validate customer status
+                if ($customer['status'] !== 'active') {
+                    throw new Exception(
+                        "Cannot process credit sale: Customer account is {$customer['status']}"
+                    );
+                }
+
+                $creditLimit = (float) $customer['credit_limit'];
+                $outstandingBalance = (float) $customer['outstanding_balance'];
+                $creditAvailable = $creditLimit - $outstandingBalance;
+
+                // Check if adding this order would exceed credit limit
+                if (($outstandingBalance + $totalAmount) > $creditLimit) {
+                    throw new Exception(
+                        "Credit limit exceeded: Available credit {$creditAvailable}, " .
+                        "Order total {$totalAmount}, Shortage " . 
+                        ($totalAmount - $creditAvailable)
+                    );
+                }
+            }
+
             // Generate unique invoice number
             $invoiceNumber = $this->generateInvoiceNumber();
 
@@ -148,12 +208,14 @@ class SalesModel
                 INSERT INTO sales_orders (
                     invoice_number,
                     customer_name,
+                    customer_id,
                     total_amount,
                     created_at,
                     updated_at
                 ) VALUES (
                     :invoice_number,
                     :customer_name,
+                    :customer_id,
                     :total_amount,
                     NOW(),
                     NOW()
@@ -163,6 +225,7 @@ class SalesModel
             $this->db->query($orderSql, [
                 'invoice_number' => $invoiceNumber,
                 'customer_name' => $customerName,
+                'customer_id' => $customerId,
                 'total_amount' => $totalAmount
             ]);
 
@@ -229,9 +292,32 @@ class SalesModel
                 }
             }
 
+            // If this is a credit sale, update customer outstanding balance
+            if ($customerId !== null) {
+                $updateCustomerBalanceSql = "
+                    UPDATE customers
+                    SET 
+                        outstanding_balance = outstanding_balance + :total_amount,
+                        updated_at = NOW()
+                    WHERE id = :customer_id
+                ";
+
+                $this->db->query($updateCustomerBalanceSql, [
+                    'total_amount' => $totalAmount,
+                    'customer_id' => $customerId
+                ]);
+            }
+
             // ACTION C: Record financial transaction manually (avoid nested transactions)
-            // Money flows FROM Sales Income Account TO Cash/Bank Account
-            $transactionDescription = "Sales Invoice: {$invoiceNumber} - Customer: {$customerName}";
+            // Determine which asset account to debit based on payment type
+            $debitAccountId = ($customerId !== null) 
+                ? self::ACCOUNTS_RECEIVABLE_ACCOUNT_ID 
+                : $cashAccountId;
+
+            $transactionDescription = ($customerId !== null)
+                ? "Credit Sale Invoice: {$invoiceNumber} - Customer: {$customerName}"
+                : "Cash Sale Invoice: {$invoiceNumber} - Customer: {$customerName}";
+            
             $transactionDate = date('Y-m-d');
 
             // Insert master transaction record
@@ -256,7 +342,7 @@ class SalesModel
 
             $transactionId = (int) $this->db->lastInsertId();
 
-            // Insert debit entry for Sales Income account (money leaving)
+            // Insert debit entry for Asset account (Cash or Accounts Receivable)
             $debitSql = "
                 INSERT INTO ledger_entries (
                     transaction_id,
@@ -275,11 +361,11 @@ class SalesModel
 
             $this->db->query($debitSql, [
                 'transaction_id' => $transactionId,
-                'account_id' => self::SALES_INCOME_ACCOUNT_ID,
-                'amount' => -$totalAmount // Negative for debit
+                'account_id' => $debitAccountId,
+                'amount' => $totalAmount // Positive for debit (asset increase)
             ]);
 
-            // Insert credit entry for Cash account (money entering)
+            // Insert credit entry for Sales Income account
             $creditSql = "
                 INSERT INTO ledger_entries (
                     transaction_id,
@@ -298,11 +384,25 @@ class SalesModel
 
             $this->db->query($creditSql, [
                 'transaction_id' => $transactionId,
-                'account_id' => $cashAccountId,
-                'amount' => $totalAmount // Positive for credit
+                'account_id' => self::SALES_INCOME_ACCOUNT_ID,
+                'amount' => -$totalAmount // Negative for credit (income increase)
             ]);
 
-            // Update Sales Income account balance (subtract)
+            // Update Asset account balance (Cash or Accounts Receivable)
+            $updateAssetSql = "
+                UPDATE accounts
+                SET
+                    balance = balance + :amount,
+                    updated_at = NOW()
+                WHERE id = :account_id
+            ";
+
+            $this->db->query($updateAssetSql, [
+                'amount' => $totalAmount,
+                'account_id' => $debitAccountId
+            ]);
+
+            // Update Sales Income account balance (subtract - income accounts have negative balances)
             $updateIncomeSql = "
                 UPDATE accounts
                 SET
@@ -316,20 +416,6 @@ class SalesModel
                 'account_id' => self::SALES_INCOME_ACCOUNT_ID
             ]);
 
-            // Update Cash account balance (add)
-            $updateCashSql = "
-                UPDATE accounts
-                SET
-                    balance = balance + :amount,
-                    updated_at = NOW()
-                WHERE id = :account_id
-            ";
-
-            $this->db->query($updateCashSql, [
-                'amount' => $totalAmount,
-                'account_id' => $cashAccountId
-            ]);
-
             // Commit the transaction - all operations succeeded
             $this->db->commit();
 
@@ -338,6 +424,8 @@ class SalesModel
                 'sales_order_id' => $salesOrderId,
                 'invoice_number' => $invoiceNumber,
                 'total_amount' => $totalAmount,
+                'payment_type' => ($customerId !== null) ? 'credit' : 'cash',
+                'customer_id' => $customerId,
                 'message' => 'Sales order created successfully'
             ];
 
@@ -404,6 +492,7 @@ class SalesModel
                 id,
                 invoice_number,
                 customer_name,
+                customer_id,
                 total_amount,
                 created_at,
                 updated_at
@@ -421,6 +510,8 @@ class SalesModel
                 'id' => (int) $row['id'],
                 'invoice_number' => $row['invoice_number'],
                 'customer_name' => $row['customer_name'],
+                'customer_id' => $row['customer_id'] ? (int) $row['customer_id'] : null,
+                'payment_type' => $row['customer_id'] ? 'credit' : 'cash',
                 'total_amount' => (float) $row['total_amount'],
                 'created_at' => $row['created_at'],
                 'updated_at' => $row['updated_at']
@@ -443,6 +534,7 @@ class SalesModel
                 id,
                 invoice_number,
                 customer_name,
+                customer_id,
                 total_amount,
                 created_at,
                 updated_at
@@ -480,6 +572,8 @@ class SalesModel
             'id' => (int) $order['id'],
             'invoice_number' => $order['invoice_number'],
             'customer_name' => $order['customer_name'],
+            'customer_id' => $order['customer_id'] ? (int) $order['customer_id'] : null,
+            'payment_type' => $order['customer_id'] ? 'credit' : 'cash',
             'total_amount' => (float) $order['total_amount'],
             'created_at' => $order['created_at'],
             'updated_at' => $order['updated_at'],
@@ -509,7 +603,9 @@ class SalesModel
             SELECT 
                 COUNT(id) AS total_orders,
                 COALESCE(SUM(total_amount), 0) AS total_revenue,
-                COALESCE(AVG(total_amount), 0) AS average_order_value
+                COALESCE(AVG(total_amount), 0) AS average_order_value,
+                COUNT(CASE WHEN customer_id IS NOT NULL THEN 1 END) AS credit_sales_count,
+                COUNT(CASE WHEN customer_id IS NULL THEN 1 END) AS cash_sales_count
             FROM sales_orders
         ";
 
@@ -519,7 +615,9 @@ class SalesModel
         return [
             'total_orders' => (int) $result['total_orders'],
             'total_revenue' => (float) $result['total_revenue'],
-            'average_order_value' => (float) $result['average_order_value']
+            'average_order_value' => (float) $result['average_order_value'],
+            'credit_sales_count' => (int) $result['credit_sales_count'],
+            'cash_sales_count' => (int) $result['cash_sales_count']
         ];
     }
 }

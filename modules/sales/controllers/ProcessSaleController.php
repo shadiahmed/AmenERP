@@ -6,19 +6,21 @@ declare(strict_types=1);
  * Create Sale Controller
  * 
  * Processes sales order form submissions with automated multi-module integration:
- * - Creates sales order and line items
+ * - Creates sales orders and line items
  * - Updates inventory stock levels
  * - Records financial transactions via FinanceModel
+ * - Handles B2B customer credit processing
  * 
  * Security:
  * - CSRF token validation (403 Forbidden on failure)
  * - Input sanitization and type casting
  * - Stock availability validation
+ * - Credit limit validation for B2B customers
  * - Transaction rollback on any error
  * 
  * @package AmenERP\Modules\Sales\Controllers
  * @author Bob
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // Ensure this is a POST request
@@ -53,6 +55,30 @@ if (!Csrf::validateToken($csrfToken)) {
  * Use htmlspecialchars to prevent XSS attacks
  */
 $customerName = htmlspecialchars(trim($_POST['customer_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+
+/**
+ * Determine payment type (cash or credit)
+ * Default to 'cash' if not specified
+ */
+$paymentType = strtolower(trim($_POST['payment_type'] ?? 'cash'));
+
+/**
+ * Sanitize and validate customer ID for credit sales
+ * Only applicable when payment_type is 'credit'
+ */
+$customerId = null;
+if ($paymentType === 'credit') {
+    $rawCustomerId = $_POST['customer_id'] ?? null;
+    
+    if ($rawCustomerId !== null && $rawCustomerId !== '') {
+        $customerId = filter_var($rawCustomerId, FILTER_VALIDATE_INT);
+        
+        // Validate that customer_id is a positive integer
+        if ($customerId === false || $customerId <= 0) {
+            $customerId = null;
+        }
+    }
+}
 
 /**
  * Collect and sanitize sale items array
@@ -111,6 +137,25 @@ if (strlen($customerName) < 2 || strlen($customerName) > 255) {
 }
 
 /**
+ * Validate payment type
+ */
+if (!in_array($paymentType, ['cash', 'credit'], true)) {
+    $_SESSION['error'] = 'Invalid payment type. Must be either "cash" or "credit".';
+    header('Location: ' . BASE_URL . '/sales');
+    exit;
+}
+
+/**
+ * Validate customer ID for credit sales
+ * If payment type is credit, customer_id is mandatory
+ */
+if ($paymentType === 'credit' && $customerId === null) {
+    $_SESSION['error'] = 'Commercial profile selection is mandatory for corporate credit invoicing. Please select a valid business customer account.';
+    header('Location: ' . BASE_URL . '/sales');
+    exit;
+}
+
+/**
  * Validate that we have at least one item
  */
 if (empty($items)) {
@@ -144,28 +189,33 @@ try {
      * - Insert sales_order and sales_items records
      * - Update inventory stock levels
      * - Record financial transaction
+     * - For credit sales: Verify credit limit and update customer balance
      * - All wrapped in a database transaction
      * 
      * Parameters:
      * - $customerName: Customer or buyer name
      * - $items: Array of items with product_id, quantity, unit_price
+     * - $customerId: Optional customer ID for credit sales (null for cash sales)
      * - $cashAccountId: Optional cash account (defaults to Account ID 1)
      */
     $result = $salesModel->createSalesOrder(
         $customerName,
         $items,
+        $customerId, // Pass customer ID for credit sales, null for cash sales
         null // Use default cash account (ID 1)
     );
     
     if ($result['success']) {
         // Success - Set success message with invoice details
+        $paymentTypeLabel = ($paymentType === 'credit') ? 'Credit Sale' : 'Cash Sale';
         $_SESSION['success'] = sprintf(
-            'Sale completed successfully! Invoice: %s | Total: $%s',
+            '%s completed successfully! Invoice: %s | Total: $%s',
+            htmlspecialchars($paymentTypeLabel, ENT_QUOTES, 'UTF-8'),
             htmlspecialchars($result['invoice_number'], ENT_QUOTES, 'UTF-8'),
             number_format($result['total_amount'], 2)
         );
     } else {
-        // Business logic error (e.g., insufficient stock)
+        // Business logic error (e.g., insufficient stock, credit limit exceeded)
         $_SESSION['error'] = 'Sale failed: ' . htmlspecialchars($result['message'], ENT_QUOTES, 'UTF-8');
     }
     
