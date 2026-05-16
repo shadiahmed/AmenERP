@@ -2,19 +2,22 @@
 /**
  * Sales Module - Main Dashboard View
  *
- * Displays new cash sale form with dynamic product selection and customer details.
- * Implements real-time calculations, stock validation, and seamless multi-module integration.
+ * Displays new sales form with support for both Cash Sales and B2B Credit Customers.
+ * Implements real-time calculations, stock validation, credit limit checking, and seamless multi-module integration.
  *
  * Features:
+ * - Dual payment type support (Cash/Credit)
+ * - Dynamic customer selection with credit limit tracking
  * - Dynamic item rows with add/remove functionality
  * - Real-time price and total calculations
+ * - Credit boundary validation
  * - Stock availability validation
  * - CSRF protection
  * - Responsive mobile-first design
  *
  * @package AmenERP\Modules\Sales
  * @author Bob
- * @version 1.0.1
+ * @version 2.0.0
  */
 
 declare(strict_types=1);
@@ -47,9 +50,11 @@ if (!class_exists('Csrf')) {
  * Load required models
  * SalesModel: Handles sales order creation and retrieval
  * InventoryModel: Provides product data for the sales form
+ * CustomerModel: Provides B2B customer data for credit sales
  */
 require_once __DIR__ . '/models/SalesModel.php';
 require_once __DIR__ . '/../inventory/models/InventoryModel.php';
+require_once __DIR__ . '/../customers/models/CustomerModel.php';
 
 // ============================================================================
 // DATA INITIALIZATION
@@ -60,6 +65,7 @@ require_once __DIR__ . '/../inventory/models/InventoryModel.php';
  */
 $salesModel = new SalesModel();
 $inventoryModel = new InventoryModel();
+$customerModel = new CustomerModel();
 
 /**
  * Fetch active products for the sales form
@@ -68,6 +74,15 @@ $inventoryModel = new InventoryModel();
 $allProducts = $inventoryModel->getAllProducts();
 $products = array_filter($allProducts, function($product) {
     return isset($product['status']) && $product['status'] === 'active';
+});
+
+/**
+ * Fetch all active B2B customers for credit sales
+ * Only active customers can make credit purchases
+ */
+$allB2BCustomers = $customerModel->getAllCustomers('active');
+$b2bCustomers = array_filter($allB2BCustomers, function($customer) {
+    return isset($customer['status']) && $customer['status'] === 'active';
 });
 
 /**
@@ -165,29 +180,78 @@ function formatNumber(int $number): string
         </div>
     </div>
 
-    <!-- New Cash Sale Form -->
+    <!-- New Sales Form -->
     <section class="form-section">
-        <h3>New Cash Sale</h3>
-        <p class="form-description">Create a new sales invoice. Stock levels will be automatically updated and the transaction will be recorded in your accounts.</p>
+        <h3>New Sales Transaction</h3>
+        <p class="form-description">Create a new sales invoice for cash or credit customers. Stock levels will be automatically updated and the transaction will be recorded in your accounts.</p>
         
         <form id="salesForm" class="sales-form" method="POST" action="<?php echo BASE_URL; ?>/sales/checkout">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
             
-            <!-- Customer Information -->
-            <div class="form-group">
-                <label for="customer_name" class="form-label">
-                    Customer Name <span class="required">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="customer_name" 
-                    name="customer_name" 
-                    class="form-input" 
-                    placeholder="Enter customer name"
-                    required
-                    minlength="2"
-                    maxlength="255"
-                >
+            <!-- Customer Information Section -->
+            <div class="customer-info-section">
+                <h4>Customer Information</h4>
+                
+                <div class="form-row">
+                    <!-- Payment Type Selector -->
+                    <div class="form-group">
+                        <label for="payment_type" class="form-label">
+                            Payment Type <span class="required">*</span>
+                        </label>
+                        <select 
+                            id="payment_type" 
+                            name="payment_type" 
+                            class="form-select" 
+                            required
+                        >
+                            <option value="cash">Direct Cash Payment</option>
+                            <option value="credit">On-Account Commercial Credit</option>
+                        </select>
+                    </div>
+
+                    <!-- Cash Customer Name Input (Default Visible) -->
+                    <div class="form-group" id="customer_name_wrapper">
+                        <label for="customer_name" class="form-label">
+                            Customer Name <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="customer_name" 
+                            name="customer_name" 
+                            class="form-input" 
+                            placeholder="Enter customer name"
+                            required
+                            minlength="2"
+                            maxlength="255"
+                        >
+                    </div>
+
+                    <!-- B2B Customer Selector (Hidden by Default) -->
+                    <div class="form-group" id="customer_id_wrapper" style="display: none;">
+                        <label for="customer_id" class="form-label">
+                            B2B Customer <span class="required">*</span>
+                        </label>
+                        <select 
+                            id="customer_id" 
+                            name="customer_id" 
+                            class="form-select"
+                        >
+                            <option value="">Select a customer</option>
+                            <?php foreach ($b2bCustomers as $customer): ?>
+                                <option 
+                                    value="<?php echo (int)$customer['id']; ?>"
+                                    data-limit="<?php echo (float)$customer['credit_limit']; ?>"
+                                    data-debt="<?php echo (float)$customer['outstanding_balance']; ?>"
+                                    data-name="<?php echo htmlspecialchars($customer['company_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                >
+                                    <?php echo htmlspecialchars($customer['company_name'], ENT_QUOTES, 'UTF-8'); ?> 
+                                    (<?php echo htmlspecialchars($customer['customer_code'], ENT_QUOTES, 'UTF-8'); ?>) 
+                                    - Credit: <?php echo formatCurrency($customer['credit_available']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <!-- Sale Items Section -->
@@ -271,6 +335,7 @@ function formatNumber(int $number): string
                         <span class="total-label">Total Amount:</span>
                         <span id="totalAmount" class="total-value">$0.00</span>
                     </div>
+                    <div id="credit_warning" style="color: red; font-weight: bold; margin-top: 5px;"></div>
                 </div>
             </div>
 
@@ -302,6 +367,7 @@ function formatNumber(int $number): string
                         <tr>
                             <th>Invoice #</th>
                             <th>Customer</th>
+                            <th>Type</th>
                             <th>Total Amount</th>
                             <th>Date</th>
                             <th>Actions</th>
@@ -314,6 +380,11 @@ function formatNumber(int $number): string
                                     <strong><?php echo htmlspecialchars($order['invoice_number'], ENT_QUOTES, 'UTF-8'); ?></strong>
                                 </td>
                                 <td><?php echo htmlspecialchars($order['customer_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td>
+                                    <span class="badge badge-<?php echo $order['payment_type'] === 'credit' ? 'warning' : 'success'; ?>">
+                                        <?php echo $order['payment_type'] === 'credit' ? 'Credit' : 'Cash'; ?>
+                                    </span>
+                                </td>
                                 <td class="amount"><?php echo formatCurrency($order['total_amount']); ?></td>
                                 <td><?php echo date('M d, Y', strtotime($order['created_at'])); ?></td>
                                 <td>
@@ -341,6 +412,12 @@ function formatNumber(int $number): string
     const addItemBtn = document.getElementById('addItemBtn');
     const totalAmountElement = document.getElementById('totalAmount');
     const salesForm = document.getElementById('salesForm');
+    const paymentTypeSelect = document.getElementById('payment_type');
+    const customerNameWrapper = document.getElementById('customer_name_wrapper');
+    const customerIdWrapper = document.getElementById('customer_id_wrapper');
+    const customerNameInput = document.getElementById('customer_name');
+    const customerIdSelect = document.getElementById('customer_id');
+    const creditWarning = document.getElementById('credit_warning');
 
     // Product data from PHP - ensure all properties are properly typed
     const products = <?php echo json_encode(array_values(array_map(function($p) {
@@ -352,6 +429,99 @@ function formatNumber(int $number): string
             'unit_price' => (float)$p['unit_price']
         ];
     }, $products))); ?>;
+
+    // Payment type change handler
+    paymentTypeSelect.addEventListener('change', function() {
+        const paymentType = this.value;
+        
+        if (paymentType === 'credit') {
+            // Show customer ID selector, hide customer name input
+            customerIdWrapper.style.display = 'block';
+            customerNameWrapper.style.display = 'none';
+            
+            // Update required attributes
+            customerIdSelect.setAttribute('required', 'required');
+            customerNameInput.removeAttribute('required');
+            
+            // Clear values
+            customerNameInput.value = '';
+            customerIdSelect.value = '';
+            
+            // Clear credit warning
+            creditWarning.textContent = '';
+        } else {
+            // Show customer name input, hide customer ID selector
+            customerNameWrapper.style.display = 'block';
+            customerIdWrapper.style.display = 'none';
+            
+            // Update required attributes
+            customerNameInput.setAttribute('required', 'required');
+            customerIdSelect.removeAttribute('required');
+            
+            // Clear values
+            customerIdSelect.value = '';
+            customerNameInput.value = '';
+            
+            // Clear credit warning
+            creditWarning.textContent = '';
+        }
+    });
+
+    // Customer ID change handler - sync name and check credit
+    customerIdSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (selectedOption.value) {
+            // Extract customer name from data attribute and set it in the hidden input
+            const customerName = selectedOption.dataset.name || '';
+            customerNameInput.value = customerName;
+            
+            // Check credit boundaries
+            checkCreditBoundaries();
+        } else {
+            customerNameInput.value = '';
+            creditWarning.textContent = '';
+        }
+    });
+
+    // Check credit boundaries function
+    function checkCreditBoundaries() {
+        const paymentType = paymentTypeSelect.value;
+        
+        // Only check for credit sales
+        if (paymentType !== 'credit') {
+            creditWarning.textContent = '';
+            return;
+        }
+        
+        const selectedOption = customerIdSelect.options[customerIdSelect.selectedIndex];
+        
+        if (!selectedOption.value) {
+            creditWarning.textContent = '';
+            return;
+        }
+        
+        // Parse customer credit data
+        const creditLimit = parseFloat(selectedOption.dataset.limit) || 0;
+        const outstandingDebt = parseFloat(selectedOption.dataset.debt) || 0;
+        const creditAvailable = creditLimit - outstandingDebt;
+        
+        // Get current total amount
+        const totalAmountText = totalAmountElement.textContent.replace('$', '').replace(',', '');
+        const totalAmount = parseFloat(totalAmountText) || 0;
+        
+        // Check if transaction would exceed credit limit
+        if (totalAmount > creditAvailable) {
+            const shortage = totalAmount - creditAvailable;
+            creditWarning.textContent = `⚠️ WARNING: This transaction ($${totalAmount.toFixed(2)}) exceeds available credit ($${creditAvailable.toFixed(2)}) by $${shortage.toFixed(2)}. Transaction will be declined.`;
+        } else if (totalAmount > 0) {
+            const remainingCredit = creditAvailable - totalAmount;
+            creditWarning.textContent = `✓ Credit approved. Remaining credit after this sale: $${remainingCredit.toFixed(2)}`;
+            creditWarning.style.color = 'green';
+        } else {
+            creditWarning.textContent = '';
+        }
+    }
 
     // Add new item row
     addItemBtn.addEventListener('click', () => {
@@ -462,16 +632,20 @@ function formatNumber(int $number): string
         }
 
         updateTotalAmount();
+        checkCreditBoundaries();
     }
 
     // Update total amount
     function updateTotalAmount() {
         let total = 0;
         document.querySelectorAll('.line-total').forEach(input => {
-            const value = parseFloat(input.value.replace('$', '')) || 0;
+            const value = parseFloat(input.value.replace('$', '').replace(',', '')) || 0;
             total += value;
         });
         totalAmountElement.textContent = `$${total.toFixed(2)}`;
+        
+        // Re-check credit boundaries when total changes
+        checkCreditBoundaries();
     }
 
     // Remove item row
@@ -480,6 +654,7 @@ function formatNumber(int $number): string
         row.remove();
         updateTotalAmount();
         updateRemoveButtons();
+        checkCreditBoundaries();
     }
 
     // Update remove button visibility using CSS classes
@@ -506,6 +681,17 @@ function formatNumber(int $number): string
             if (idx > 0) row.remove();
         });
         itemIndex = 1;
+        
+        // Reset payment type to cash
+        paymentTypeSelect.value = 'cash';
+        customerNameWrapper.style.display = 'block';
+        customerIdWrapper.style.display = 'none';
+        customerNameInput.setAttribute('required', 'required');
+        customerIdSelect.removeAttribute('required');
+        
+        // Clear credit warning
+        creditWarning.textContent = '';
+        
         updateTotalAmount();
         updateRemoveButtons();
     });
@@ -523,6 +709,25 @@ function formatNumber(int $number): string
                 e.preventDefault();
             }
         });
+        
+        // Additional validation for credit sales
+        const paymentType = paymentTypeSelect.value;
+        if (paymentType === 'credit' && !hasError) {
+            const selectedOption = customerIdSelect.options[customerIdSelect.selectedIndex];
+            
+            if (selectedOption.value) {
+                const creditLimit = parseFloat(selectedOption.dataset.limit) || 0;
+                const outstandingDebt = parseFloat(selectedOption.dataset.debt) || 0;
+                const creditAvailable = creditLimit - outstandingDebt;
+                const totalAmountText = totalAmountElement.textContent.replace('$', '').replace(',', '');
+                const totalAmount = parseFloat(totalAmountText) || 0;
+                
+                if (totalAmount > creditAvailable) {
+                    alert('Cannot process: Transaction exceeds customer credit limit');
+                    e.preventDefault();
+                }
+            }
+        }
     });
 
     // View order details

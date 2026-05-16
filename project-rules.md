@@ -32,6 +32,7 @@
 - Mobile-First Design: Since the app may run on mobile (Termux/Localhost), use @media queries starting from the smallest screen size up.
 - Naming Convention: Use a simplified BEM (Block-Element-Modifier) or a consistent prefixing system (e.g., .erp-btn, .erp-card) to avoid style bleeding in a modular system.
 - Native Nesting: Use modern CSS nesting (available in 2026 browsers) to keep stylesheets readable without extra tools.
+- Include all CSS in a single folder: Keep CSS in a single folder (e.g., /assets/css) to avoid cluttering the project structure.
 
 # 6. JavaScript (ES6+ & Beyond)
 - No Frameworks/Libraries: Zero jQuery. Use fetch() for API calls, querySelector for DOM manipulation, and addEventListener for events.
@@ -39,3 +40,4 @@
 - Asynchronous Logic: Use async/await for all database interactions or API calls to the PHP core.
 - State Management: Use simple Javascript objects or the CustomEvent API for communication between modules, avoiding complex state libraries.
 - Event Delegation: Attach listeners to parent containers where possible to improve performance when handling large lists (like inventory tables).
+- Include all JS in a single folder: Keep JS in a single folder (e.g., /assets/js) to avoid cluttering the project structure.
