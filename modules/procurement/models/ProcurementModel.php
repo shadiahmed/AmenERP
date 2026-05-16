@@ -10,6 +10,7 @@ declare(strict_types=1);
  * - Creates purchase orders and line items
  * - Updates inventory stock levels automatically (INCREASES quantity)
  * - Records financial transactions directly (double-entry bookkeeping)
+ * - Integrates with supplier accounts for credit purchases
  *
  * All operations are wrapped in a single database transaction to ensure data integrity.
  * If any step fails, the entire operation is rolled back.
@@ -44,6 +45,14 @@ class ProcurementModel
     private const CASH_ACCOUNT_ID = 1;
 
     /**
+     * Accounts Payable Liability Account ID
+     * This account is CREDITED when making credit purchases (increasing liability)
+     *
+     * @var int
+     */
+    private const ACCOUNTS_PAYABLE_ACCOUNT_ID = 6;
+
+    /**
      * Constructor
      * Initializes database connection
      */
@@ -54,40 +63,54 @@ class ProcurementModel
 
     /**
      * Create a new purchase order with automated multi-module integration
-     * 
+     *
      * This is the core integration method that executes a complete procurement transaction:
-     * 
+     *
      * Action A: Insert master purchase_order and line items into purchase_items
      * Action B: Update inventory stock levels for each product purchased (INCREASE quantity)
      * Action C: Record financial transaction (double-entry bookkeeping)
-     * 
-     * Financial Flow:
+     * Action D: For credit purchases, update supplier outstanding balance and accounts payable
+     *
+     * Financial Flow (Cash Purchase):
      * - DEBIT Inventory Asset Account (increases asset value)
      * - CREDIT Cash/Bank Account (reduces cash)
-     * 
+     *
+     * Financial Flow (Credit Purchase):
+     * - DEBIT Inventory Asset Account (increases asset value)
+     * - CREDIT Accounts Payable (increases liability - what we owe)
+     * - Update supplier outstanding_balance (increases what we owe to supplier)
+     *
      * All operations are wrapped in a database transaction. If any step fails
      * (e.g., product not found, database error), the entire operation is rolled back.
-     * 
+     *
      * @param string $supplierName Supplier or vendor name
      * @param array<int, array<string, mixed>> $items Array of items with keys:
      *                                                - product_id: Product ID (int)
      *                                                - quantity: Quantity to purchase (int)
      *                                                - unit_cost: Cost per unit (float)
      * @param int|null $cashAccountId Optional cash account ID (defaults to CASH_ACCOUNT_ID)
+     * @param string $paymentType Payment type: 'cash' or 'credit' (default: 'cash')
+     * @param int|null $supplierId Supplier ID for credit purchases (required if paymentType is 'credit')
      * @return array<string, mixed> Result array with keys:
      *                              - success: bool
      *                              - purchase_order_id: int (if successful)
      *                              - po_number: string (if successful)
      *                              - message: string (error message if failed)
      * @throws PDOException If database operation fails
-     * 
+     *
      * @example
+     * // Cash purchase
      * $model = new ProcurementModel();
      * $result = $model->createPurchaseOrder('ABC Suppliers Ltd', [
      *     ['product_id' => 1, 'quantity' => 100, 'unit_cost' => 25.00],
      *     ['product_id' => 3, 'quantity' => 50, 'unit_cost' => 75.00]
-     * ]);
-     * 
+     * ], null, 'cash');
+     *
+     * // Credit purchase
+     * $result = $model->createPurchaseOrder('ABC Suppliers Ltd', [
+     *     ['product_id' => 1, 'quantity' => 100, 'unit_cost' => 25.00]
+     * ], null, 'credit', 5);
+     *
      * if ($result['success']) {
      *     echo "Purchase order created: " . $result['po_number'];
      * } else {
@@ -97,7 +120,9 @@ class ProcurementModel
     public function createPurchaseOrder(
         string $supplierName,
         array $items,
-        ?int $cashAccountId = null
+        ?int $cashAccountId = null,
+        string $paymentType = 'cash',
+        ?int $supplierId = null
     ): array {
         // Use default cash account if not specified
         $cashAccountId = $cashAccountId ?? self::CASH_ACCOUNT_ID;
@@ -105,6 +130,16 @@ class ProcurementModel
         try {
             // Start database transaction for ACID compliance
             $this->db->beginTransaction();
+
+            // Validate payment type
+            if (!in_array($paymentType, ['cash', 'credit'], true)) {
+                throw new Exception('Invalid payment type. Must be "cash" or "credit"');
+            }
+
+            // Validate supplier_id for credit purchases
+            if ($paymentType === 'credit' && ($supplierId === null || $supplierId <= 0)) {
+                throw new Exception('Supplier ID is required for credit purchases');
+            }
 
             // Validate that we have items to purchase
             if (empty($items)) {
@@ -146,18 +181,22 @@ class ProcurementModel
             // Generate unique PO number
             $poNumber = $this->generatePONumber();
 
-            // ACTION A: Insert master purchase order record
+            // ACTION A: Insert master purchase order record with supplier integration
             $orderSql = "
                 INSERT INTO purchase_orders (
                     po_number,
                     supplier_name,
+                    supplier_id,
                     total_amount,
+                    payment_type,
                     created_at,
                     updated_at
                 ) VALUES (
                     :po_number,
                     :supplier_name,
+                    :supplier_id,
                     :total_amount,
+                    :payment_type,
                     NOW(),
                     NOW()
                 )
@@ -166,7 +205,9 @@ class ProcurementModel
             $this->db->query($orderSql, [
                 'po_number' => $poNumber,
                 'supplier_name' => $supplierName,
-                'total_amount' => $totalAmount
+                'supplier_id' => $supplierId,
+                'total_amount' => $totalAmount,
+                'payment_type' => $paymentType
             ]);
 
             // Get the purchase order ID
@@ -220,10 +261,7 @@ class ProcurementModel
                 ]);
             }
 
-            // ACTION C: Record financial transaction manually (avoid nested transactions)
-            // Money flows FROM Cash/Bank Account TO Inventory Asset Account
-            // DEBIT Inventory Asset (increases asset value)
-            // CREDIT Cash/Bank (reduces cash)
+            // ACTION C: Record financial transaction based on payment type
             $transactionDescription = "Purchase Order: {$poNumber} - Supplier: {$supplierName}";
             $transactionDate = date('Y-m-d');
 
@@ -272,30 +310,97 @@ class ProcurementModel
                 'amount' => $totalAmount // Positive for debit (asset increasing)
             ]);
 
-            // Insert credit entry for Cash account (cash decreasing)
-            $creditSql = "
-                INSERT INTO ledger_entries (
-                    transaction_id,
-                    account_id,
-                    amount,
-                    created_at,
-                    updated_at
-                ) VALUES (
-                    :transaction_id,
-                    :account_id,
-                    :amount,
-                    NOW(),
-                    NOW()
-                )
-            ";
+            if ($paymentType === 'cash') {
+                // CASH PURCHASE: CREDIT Cash account (cash decreasing)
+                $creditSql = "
+                    INSERT INTO ledger_entries (
+                        transaction_id,
+                        account_id,
+                        amount,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :transaction_id,
+                        :account_id,
+                        :amount,
+                        NOW(),
+                        NOW()
+                    )
+                ";
 
-            $this->db->query($creditSql, [
-                'transaction_id' => $transactionId,
-                'account_id' => $cashAccountId,
-                'amount' => -$totalAmount // Negative for credit (cash leaving)
-            ]);
+                $this->db->query($creditSql, [
+                    'transaction_id' => $transactionId,
+                    'account_id' => $cashAccountId,
+                    'amount' => -$totalAmount // Negative for credit (cash leaving)
+                ]);
 
-            // Update Inventory Asset account balance (add)
+                // Update Cash account balance (subtract)
+                $updateCashSql = "
+                    UPDATE accounts
+                    SET
+                        balance = balance - :amount,
+                        updated_at = NOW()
+                    WHERE id = :account_id
+                ";
+
+                $this->db->query($updateCashSql, [
+                    'amount' => $totalAmount,
+                    'account_id' => $cashAccountId
+                ]);
+            } else {
+                // CREDIT PURCHASE: CREDIT Accounts Payable (liability increasing)
+                $creditSql = "
+                    INSERT INTO ledger_entries (
+                        transaction_id,
+                        account_id,
+                        amount,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :transaction_id,
+                        :account_id,
+                        :amount,
+                        NOW(),
+                        NOW()
+                    )
+                ";
+
+                $this->db->query($creditSql, [
+                    'transaction_id' => $transactionId,
+                    'account_id' => self::ACCOUNTS_PAYABLE_ACCOUNT_ID,
+                    'amount' => -$totalAmount // Negative for credit (liability increasing)
+                ]);
+
+                // Update Accounts Payable account balance (add)
+                $updatePayableSql = "
+                    UPDATE accounts
+                    SET
+                        balance = balance + :amount,
+                        updated_at = NOW()
+                    WHERE id = :account_id
+                ";
+
+                $this->db->query($updatePayableSql, [
+                    'amount' => $totalAmount,
+                    'account_id' => self::ACCOUNTS_PAYABLE_ACCOUNT_ID
+                ]);
+
+                // ACTION D: Update supplier outstanding balance
+                $updateSupplierSql = "
+                    UPDATE suppliers
+                    SET
+                        outstanding_balance = outstanding_balance + :amount,
+                        updated_at = NOW()
+                    WHERE id = :supplier_id
+                ";
+
+                $this->db->query($updateSupplierSql, [
+                    'amount' => $totalAmount,
+                    'supplier_id' => $supplierId
+                ]);
+            }
+
+            // Update Inventory Asset account balance (add) - applies to both cash and credit
             $updateInventorySql = "
                 UPDATE accounts
                 SET
@@ -309,20 +414,6 @@ class ProcurementModel
                 'account_id' => self::INVENTORY_ASSET_ACCOUNT_ID
             ]);
 
-            // Update Cash account balance (subtract)
-            $updateCashSql = "
-                UPDATE accounts
-                SET
-                    balance = balance - :amount,
-                    updated_at = NOW()
-                WHERE id = :account_id
-            ";
-
-            $this->db->query($updateCashSql, [
-                'amount' => $totalAmount,
-                'account_id' => $cashAccountId
-            ]);
-
             // Commit the transaction - all operations succeeded
             $this->db->commit();
 
@@ -331,6 +422,9 @@ class ProcurementModel
                 'purchase_order_id' => $purchaseOrderId,
                 'po_number' => $poNumber,
                 'total_amount' => $totalAmount,
+                'payment_type' => $paymentType,
+                'supplier_id' => $supplierId,
+                'supplier_name' => $supplierName,
                 'message' => 'Purchase order created successfully'
             ];
 

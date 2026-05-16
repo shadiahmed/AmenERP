@@ -27,15 +27,18 @@ require_once __DIR__ . '/../../core/Database.php';
 require_once __DIR__ . '/../../core/Csrf.php';
 require_once __DIR__ . '/models/ProcurementModel.php';
 require_once __DIR__ . '/../inventory/models/InventoryModel.php';
+require_once __DIR__ . '/../suppliers/models/SupplierModel.php';
 
 // Instantiate models
 $procurementModel = new ProcurementModel();
 $inventoryModel = new InventoryModel();
+$supplierModel = new SupplierModel();
 
 // Fetch data for the page
 $products = $inventoryModel->getAllProducts();
 $recentPurchases = $procurementModel->getAllPurchaseOrders(20);
 $stats = $procurementModel->getProcurementStats();
+$suppliers = $supplierModel->getAllSuppliers('active');
 
 // Generate CSRF token
 $csrfToken = Csrf::generateToken();
@@ -98,20 +101,47 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <!-- CSRF Token -->
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
-                    <!-- Supplier Name -->
+                    <!-- Payment Type Selection -->
                     <div class="erp-form-group">
-                        <label for="supplier_name" class="erp-form-label">Supplier Name *</label>
-                        <input 
-                            type="text" 
-                            id="supplier_name" 
-                            name="supplier_name" 
-                            class="erp-form-input" 
-                            placeholder="Enter supplier or vendor name"
+                        <label for="payment_type" class="erp-form-label">Payment Type *</label>
+                        <select
+                            id="payment_type"
+                            name="payment_type"
+                            class="erp-form-select"
                             required
-                            minlength="2"
-                            maxlength="255"
                         >
+                            <option value="cash">Direct Cash Purchase</option>
+                            <option value="credit">On-Account Vendor Credit</option>
+                        </select>
                     </div>
+
+                    <!-- Supplier Selection (for credit purchases) -->
+                    <div id="supplier_id_wrapper" class="erp-form-group" style="display: none;">
+                        <label for="supplier_id" class="erp-form-label">Select Supplier *</label>
+                        <select
+                            id="supplier_id"
+                            name="supplier_id"
+                            class="erp-form-select"
+                        >
+                            <option value="">-- Select a Supplier --</option>
+                            <?php foreach ($suppliers as $supplier): ?>
+                                <option
+                                    value="<?php echo (int) $supplier['id']; ?>"
+                                    data-name="<?php echo htmlspecialchars($supplier['supplier_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-balance="<?php echo (float) $supplier['outstanding_balance']; ?>"
+                                    data-credit-available="<?php echo (float) $supplier['credit_available']; ?>"
+                                >
+                                    <?php echo htmlspecialchars($supplier['supplier_code'], ENT_QUOTES, 'UTF-8'); ?> -
+                                    <?php echo htmlspecialchars($supplier['supplier_name'], ENT_QUOTES, 'UTF-8'); ?>
+                                    (Balance: $<?php echo number_format($supplier['outstanding_balance'], 2); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="erp-form-help">Select the supplier for this credit purchase</small>
+                    </div>
+
+                    <!-- Supplier Name (hidden field for form submission) -->
+                    <input type="hidden" id="supplier_name" name="supplier_name" value="">
 
                     <!-- Items Section -->
                     <div class="erp-items-container">
@@ -225,7 +255,7 @@ unset($_SESSION['success'], $_SESSION['error']);
     <script type="module">
         /**
          * Procurement Form Manager
-         * Handles dynamic row management and real-time calculations
+         * Handles dynamic row management, real-time calculations, and supplier integration
          */
         class ProcurementFormManager {
             constructor() {
@@ -234,6 +264,13 @@ unset($_SESSION['success'], $_SESSION['error']);
                 this.totalAmountDisplay = document.getElementById('totalAmount');
                 this.rowTemplate = document.getElementById('rowTemplate');
                 this.rowCounter = 0;
+                
+                // Supplier integration elements
+                this.paymentTypeSelect = document.getElementById('payment_type');
+                this.supplierIdWrapper = document.getElementById('supplier_id_wrapper');
+                this.supplierIdSelect = document.getElementById('supplier_id');
+                this.supplierNameInput = document.getElementById('supplier_name');
+                this.purchaseForm = document.getElementById('purchaseForm');
 
                 this.init();
             }
@@ -245,7 +282,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                 // Add initial row
                 this.addItemRow();
 
-                // Event listeners
+                // Event listeners for items
                 this.addItemBtn.addEventListener('click', () => this.addItemRow());
 
                 // Event delegation for dynamic elements
@@ -256,7 +293,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                 });
 
                 this.itemsContainer.addEventListener('input', (e) => {
-                    if (e.target.classList.contains('item-quantity') || 
+                    if (e.target.classList.contains('item-quantity') ||
                         e.target.classList.contains('item-cost')) {
                         this.updateLineTotal(e.target);
                         this.updateGrandTotal();
@@ -268,6 +305,98 @@ unset($_SESSION['success'], $_SESSION['error']);
                         this.handleProductChange(e.target);
                     }
                 });
+
+                // Event listeners for supplier integration
+                this.paymentTypeSelect.addEventListener('change', () => this.handlePaymentTypeChange());
+                this.supplierIdSelect.addEventListener('change', () => this.handleSupplierChange());
+                
+                // Form submission validation
+                this.purchaseForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+            }
+
+            /**
+             * Handle payment type change (cash vs credit)
+             */
+            handlePaymentTypeChange() {
+                const paymentType = this.paymentTypeSelect.value;
+                
+                if (paymentType === 'credit') {
+                    // Show supplier dropdown and make it required
+                    this.supplierIdWrapper.style.display = 'block';
+                    this.supplierIdSelect.setAttribute('required', 'required');
+                } else {
+                    // Hide supplier dropdown and remove required attribute
+                    this.supplierIdWrapper.style.display = 'none';
+                    this.supplierIdSelect.removeAttribute('required');
+                    this.supplierIdSelect.value = '';
+                    this.supplierNameInput.value = '';
+                }
+            }
+
+            /**
+             * Handle supplier selection change
+             */
+            handleSupplierChange() {
+                const selectedOption = this.supplierIdSelect.options[this.supplierIdSelect.selectedIndex];
+                
+                if (selectedOption.value) {
+                    // Update hidden supplier name field
+                    const supplierName = selectedOption.dataset.name || '';
+                    this.supplierNameInput.value = supplierName;
+                    
+                    // Optional: Display supplier credit information
+                    const creditAvailable = parseFloat(selectedOption.dataset.creditAvailable) || 0;
+                    const currentBalance = parseFloat(selectedOption.dataset.balance) || 0;
+                    
+                    console.log('Supplier selected:', {
+                        name: supplierName,
+                        creditAvailable: creditAvailable,
+                        currentBalance: currentBalance
+                    });
+                } else {
+                    this.supplierNameInput.value = '';
+                }
+            }
+
+            /**
+             * Handle form submission validation
+             */
+            handleFormSubmit(e) {
+                const paymentType = this.paymentTypeSelect.value;
+                const totalAmount = this.calculateGrandTotal();
+                
+                // Validate credit purchase requirements
+                if (paymentType === 'credit') {
+                    const supplierId = this.supplierIdSelect.value;
+                    
+                    if (!supplierId) {
+                        e.preventDefault();
+                        alert('Please select a supplier for credit purchases.');
+                        return false;
+                    }
+                    
+                    // Optional: Check credit limit
+                    const selectedOption = this.supplierIdSelect.options[this.supplierIdSelect.selectedIndex];
+                    const creditAvailable = parseFloat(selectedOption.dataset.creditAvailable) || 0;
+                    
+                    if (creditAvailable > 0 && totalAmount > creditAvailable) {
+                        const confirmMsg = `Warning: Purchase amount ($${totalAmount.toFixed(2)}) exceeds available credit ($${creditAvailable.toFixed(2)}). Continue anyway?`;
+                        if (!confirm(confirmMsg)) {
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                }
+                
+                // Validate at least one item
+                const rows = this.itemsContainer.querySelectorAll('.erp-item-row');
+                if (rows.length === 0) {
+                    e.preventDefault();
+                    alert('Please add at least one item to the purchase order.');
+                    return false;
+                }
+                
+                return true;
             }
 
             /**
@@ -340,9 +469,9 @@ unset($_SESSION['success'], $_SESSION['error']);
             }
 
             /**
-             * Update the grand total
+             * Calculate the grand total (helper method)
              */
-            updateGrandTotal() {
+            calculateGrandTotal() {
                 const rows = this.itemsContainer.querySelectorAll('.erp-item-row');
                 let grandTotal = 0;
 
@@ -352,6 +481,14 @@ unset($_SESSION['success'], $_SESSION['error']);
                     grandTotal += quantity * cost;
                 });
 
+                return grandTotal;
+            }
+
+            /**
+             * Update the grand total display
+             */
+            updateGrandTotal() {
+                const grandTotal = this.calculateGrandTotal();
                 this.totalAmountDisplay.textContent = '$' + grandTotal.toFixed(2);
             }
         }

@@ -112,6 +112,9 @@ $router->get('/customers', 'customers/index.php'); // View all customers
 $router->post('/customers/payment/process', 'customers/controllers/ProcessPaymentController.php'); // Process payment
 $router->post('/customers/process-payment', 'customers/controllers/ProcessPaymentController.php'); // Process payment alias for customer form
 
+$router->get('/suppliers', 'suppliers/index.php'); // View all suppliers
+$router->post('/suppliers/payment/process', 'suppliers/controllers/ProcessPaymentController.php'); // Process payment
+$router->post('/suppliers/process-payment', 'suppliers/controllers/ProcessPaymentController.php'); // Process payment alias for supplier form
 
 
 
@@ -235,10 +238,10 @@ if (strpos($requestUri, '/inventory') !== false) {
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/reports"
-                           class="nav-link <?php echo (strpos($requestUri, '/reports') !== false) ? 'active' : ''; ?>">
+                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/suppliers"
+                           class="nav-link <?php echo (strpos($requestUri, '/suppliers') !== false) ? 'active' : ''; ?>">
                             <span class="nav-icon">💰</span>
-                            <span class="nav-text">Reports</span>
+                            <span class="nav-text">suppliers</span>
                         </a>
                     </li>
                     <li class="nav-item">
