@@ -27,6 +27,7 @@ require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../../../core/Database.php';
 require_once __DIR__ . '/../../../core/Csrf.php';
 require_once __DIR__ . '/../models/ProcurementModel.php';
+require_once __DIR__ . '/../../suppliers/models/SupplierModel.php';
 
 // ============================================================================
 // SECURITY: Block non-POST requests with HTTP 405 Method Not Allowed
@@ -56,13 +57,57 @@ if (!Csrf::validateToken($csrfToken)) {
 // INPUT SANITIZATION AND VALIDATION
 // ============================================================================
 
-// Sanitize supplier name
-$supplierName = isset($_POST['supplier_name']) 
-    ? htmlspecialchars(trim($_POST['supplier_name']), ENT_QUOTES, 'UTF-8') 
+// Sanitize payment type (cash or credit)
+$paymentType = isset($_POST['payment_type'])
+    ? strtolower(trim($_POST['payment_type']))
+    : 'cash';
+
+// Validate payment type
+if (!in_array($paymentType, ['cash', 'credit'], true)) {
+    $_SESSION['error'] = 'Invalid payment type. Must be either "cash" or "credit".';
+    header('Location: ' . BASE_URL . '/procurement');
+    exit;
+}
+
+// Sanitize and validate supplier_id for credit purchases
+$supplierId = null;
+if ($paymentType === 'credit') {
+    $supplierId = isset($_POST['supplier_id'])
+        ? filter_var($_POST['supplier_id'], FILTER_VALIDATE_INT)
+        : false;
+    
+    if ($supplierId === false || $supplierId <= 0) {
+        $_SESSION['error'] = 'A valid supplier must be selected for credit purchases.';
+        header('Location: ' . BASE_URL . '/procurement');
+        exit;
+    }
+    
+    // Verify supplier exists and is active
+    $supplierModel = new SupplierModel();
+    $supplier = $supplierModel->getSupplierById($supplierId);
+    
+    if (!$supplier) {
+        $_SESSION['error'] = 'Selected supplier not found. Please select a valid supplier.';
+        header('Location: ' . BASE_URL . '/procurement');
+        exit;
+    }
+    
+    if ($supplier['status'] !== 'active') {
+        $_SESSION['error'] = 'Cannot create credit purchase: Supplier account is ' . htmlspecialchars($supplier['status'], ENT_QUOTES, 'UTF-8') . '.';
+        header('Location: ' . BASE_URL . '/procurement');
+        exit;
+    }
+}
+
+// Sanitize supplier name (optional for cash, required for credit if supplier_id not provided)
+$supplierName = isset($_POST['supplier_name'])
+    ? htmlspecialchars(trim($_POST['supplier_name']), ENT_QUOTES, 'UTF-8')
     : '';
 
-// Validate supplier name is not empty
-if (empty($supplierName)) {
+// For credit purchases, use the supplier name from the database if available
+if ($paymentType === 'credit' && $supplierId && isset($supplier)) {
+    $supplierName = $supplier['supplier_name'];
+} elseif (empty($supplierName)) {
     $_SESSION['error'] = 'Supplier name is required.';
     header('Location: ' . BASE_URL . '/procurement');
     exit;
@@ -144,19 +189,31 @@ try {
     // Instantiate the procurement model
     $procurementModel = new ProcurementModel();
 
-    // Execute the purchase order creation
+    // Execute the purchase order creation with payment type and supplier integration
     $result = $procurementModel->createPurchaseOrder(
         $supplierName,
-        $sanitizedItems
+        $sanitizedItems,
+        null, // cashAccountId (use default)
+        $paymentType,
+        $supplierId
     );
 
     // Check if the operation was successful
     if ($result['success']) {
-        $_SESSION['success'] = sprintf(
+        $successMsg = sprintf(
             'Purchase order %s created successfully! Total amount: $%s',
             htmlspecialchars($result['po_number'], ENT_QUOTES, 'UTF-8'),
             number_format($result['total_amount'], 2)
         );
+        
+        if ($paymentType === 'credit' && isset($result['supplier_name'])) {
+            $successMsg .= sprintf(
+                ' (Credit purchase recorded for %s)',
+                htmlspecialchars($result['supplier_name'], ENT_QUOTES, 'UTF-8')
+            );
+        }
+        
+        $_SESSION['success'] = $successMsg;
     } else {
         $_SESSION['error'] = 'Failed to create purchase order: ' . htmlspecialchars($result['message'], ENT_QUOTES, 'UTF-8');
         error_log('Purchase order creation failed: ' . $result['message']);
