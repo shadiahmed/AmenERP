@@ -1,0 +1,472 @@
+/**
+ * AmenERP Design System - Design Tokens & Variables
+ * 
+ * This file establishes the foundational design language for the entire application.
+ * It defines a modern, polished semantic color palette, typography system, spacing scale,
+ * and animation configurations using CSS Custom Properties (CSS Variables).
+ * 
+ * Architecture Philosophy:
+ * - Semantic naming for maintainability and clarity
+ * - Dark/light contrast optimized for professional ERP interfaces
+ * - Fluid typography with system font stacks for optimal performance
+ * - Consistent spacing and sizing scales for visual harmony
+ * - Smooth transitions using cubic-bezier easing functions
+ * 
+ * @package AmenERP
+ * @author Bob - Expert Principal Frontend Engineer
+ * @version 2.0.0
+ */
+
+/* ============================================================================
+   ROOT DESIGN TOKENS
+   ============================================================================ */
+
+:root {
+  /* -------------------------------------------------------------------------
+     COLOR PALETTE - Semantic & Contextual
+     ------------------------------------------------------------------------- */
+  
+  /* Background Colors - Layered depth system */
+  --bg-main: #f8fafc;           /* Slate 50 - Main application background */
+  --bg-surface: #ffffff;        /* Pure white - Cards, panels, elevated surfaces */
+  --bg-sidebar: #0f172a;        /* Slate 900 - Deep midnight for sidebar */
+  --bg-hover: #f1f5f9;          /* Slate 100 - Subtle hover states */
+  --bg-active: #e2e8f0;         /* Slate 200 - Active/selected states */
+  --bg-overlay: rgba(15, 23, 42, 0.75); /* Semi-transparent overlay for modals */
+  
+  /* Primary Brand Colors - Vibrant indigo palette */
+  --primary: #2563eb;           /* Blue 600 - Primary brand color */
+  --primary-hover: #1d4ed8;     /* Blue 700 - Primary hover state */
+  --primary-active: #1e40af;    /* Blue 800 - Primary active/pressed state */
+  --primary-light: #dbeafe;     /* Blue 100 - Light primary backgrounds */
+  --accent: #3b82f6;            /* Blue 500 - Accent highlights */
+  
+  /* Semantic Status Colors - Clear visual feedback */
+  --success: #10b981;           /* Emerald 500 - Success states, positive actions */
+  --success-light: #d1fae5;     /* Emerald 100 - Success backgrounds */
+  --warning: #f59e0b;           /* Amber 500 - Warning states, caution */
+  --warning-light: #fef3c7;     /* Amber 100 - Warning backgrounds */
+  --danger: #ef4444;            /* Red 500 - Error states, destructive actions */
+  --danger-light: #fee2e2;      /* Red 100 - Error backgrounds */
+  --info: #06b6d4;              /* Cyan 500 - Informational states */
+  --info-light: #cffafe;        /* Cyan 100 - Info backgrounds */
+  
+  /* Border & Divider Colors */
+  --border-color: #e2e8f0;      /* Slate 200 - Default borders */
+  --border-light: #f1f5f9;      /* Slate 100 - Subtle dividers */
+  --border-dark: #cbd5e1;       /* Slate 300 - Emphasized borders */
+  --border-focus: #2563eb;      /* Primary - Focus indicator borders */
+  
+  /* Text Colors - Hierarchical contrast */
+  --text-main: #0f172a;         /* Slate 900 - Primary text, headings */
+  --text-body: #1e293b;         /* Slate 800 - Body text, paragraphs */
+  --text-muted: #64748b;        /* Slate 500 - Secondary text, labels */
+  --text-disabled: #94a3b8;     /* Slate 400 - Disabled text */
+  --text-on-dark: #f8fafc;      /* Slate 50 - Text on dark backgrounds */
+  --text-on-primary: #ffffff;   /* White - Text on primary color backgrounds */
+  
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY SYSTEM - Fluid & Responsive
+     ------------------------------------------------------------------------- */
+  
+  /* Font Families - System font stack for optimal performance */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+                  'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 
+                  'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 
+               'Fira Mono', 'Roboto Mono', 'Courier New', monospace;
+  
+  /* Font Sizes - Modular scale (1.250 - Major Third) */
+  --text-xs: 0.75rem;           /* 12px - Small labels, captions */
+  --text-sm: 0.875rem;          /* 14px - Secondary text, table data */
+  --text-base: 1rem;            /* 16px - Base body text */
+  --text-lg: 1.125rem;          /* 18px - Emphasized text */
+  --text-xl: 1.25rem;           /* 20px - Small headings */
+  --text-2xl: 1.5rem;           /* 24px - Section headings */
+  --text-3xl: 1.875rem;         /* 30px - Page headings */
+  --text-4xl: 2.25rem;          /* 36px - Hero headings */
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Line Heights - Optimized for readability */
+  --leading-tight: 1.25;        /* Headings */
+  --leading-normal: 1.5;        /* Body text */
+  --leading-relaxed: 1.75;      /* Long-form content */
+  
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;   /* Large headings */
+  --tracking-normal: 0;         /* Default */
+  --tracking-wide: 0.025em;     /* Small caps, labels */
+  --tracking-wider: 0.05em;     /* Uppercase labels */
+  
+  /* -------------------------------------------------------------------------
+     SPACING SYSTEM - Consistent rhythm (8px base unit)
+     ------------------------------------------------------------------------- */
+  
+  --space-1: 0.25rem;           /* 4px */
+  --space-2: 0.5rem;            /* 8px */
+  --space-3: 0.75rem;           /* 12px */
+  --space-4: 1rem;              /* 16px */
+  --space-5: 1.25rem;           /* 20px */
+  --space-6: 1.5rem;            /* 24px */
+  --space-8: 2rem;              /* 32px */
+  --space-10: 2.5rem;           /* 40px */
+  --space-12: 3rem;             /* 48px */
+  --space-16: 4rem;             /* 64px */
+  --space-20: 5rem;             /* 80px */
+  
+  /* -------------------------------------------------------------------------
+     SIZING & DIMENSIONS
+     ------------------------------------------------------------------------- */
+  
+  /* Layout Dimensions */
+  --sidebar-width: 260px;       /* Sidebar width on desktop */
+  --sidebar-width-collapsed: 80px; /* Collapsed sidebar width */
+  --header-height: 64px;        /* Top header/navbar height */
+  --max-content-width: 1400px;  /* Maximum content container width */
+  
+  /* Component Sizes */
+  --input-height: 42px;         /* Standard input field height */
+  --button-height: 42px;        /* Standard button height */
+  --button-height-sm: 36px;     /* Small button height */
+  --button-height-lg: 48px;     /* Large button height */
+  
+  /* -------------------------------------------------------------------------
+     BORDER RADIUS - Consistent rounded corners
+     ------------------------------------------------------------------------- */
+  
+  --radius-sm: 6px;             /* Small elements (badges, tags) */
+  --radius-md: 12px;            /* Standard elements (buttons, inputs, cards) */
+  --radius-lg: 16px;            /* Large elements (modals, panels) */
+  --radius-xl: 24px;            /* Extra large (hero sections) */
+  --radius-full: 9999px;        /* Fully rounded (pills, avatars) */
+  
+  /* -------------------------------------------------------------------------
+     SHADOWS - Layered elevation system
+     ------------------------------------------------------------------------- */
+  
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 
+               0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+               0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+               0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+               0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Focus Shadow - Accessibility */
+  --shadow-focus: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  
+  /* -------------------------------------------------------------------------
+     TRANSITIONS & ANIMATIONS - Smooth, professional motion
+     ------------------------------------------------------------------------- */
+  
+  /* Timing Functions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1); /* Primary easing */
+  
+  /* Duration */
+  --duration-fast: 150ms;       /* Quick interactions */
+  --duration-base: 250ms;       /* Standard transitions */
+  --duration-slow: 350ms;       /* Deliberate animations */
+  
+  /* Combined Transition Properties */
+  --transition-fast: all var(--duration-fast) var(--ease-smooth);
+  --transition-base: all var(--duration-base) var(--ease-smooth);
+  --transition-slow: all var(--duration-slow) var(--ease-smooth);
+  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Alias */
+  
+  /* -------------------------------------------------------------------------
+     Z-INDEX LAYERS - Stacking context management
+     ------------------------------------------------------------------------- */
+  
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* ============================================================================
+   GLOBAL RESETS & BASE STYLES
+   ============================================================================ */
+
+/**
+ * Modern CSS Reset
+ * Provides a consistent baseline across all browsers
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Smooth scrolling for anchor links */
+  scroll-behavior: smooth;
+  
+  /* Prevent font size adjustments on orientation change (iOS) */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  
+  /* Enable font smoothing for better text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  /* Apply design system typography */
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+  color: var(--text-body);
+  background-color: var(--bg-main);
+  
+  /* Prevent horizontal overflow */
+  overflow-x: hidden;
+  
+  /* Minimum height for proper layout */
+  min-height: 100vh;
+}
+
+/**
+ * Heading Styles
+ * Consistent hierarchy with proper semantic sizing
+ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
+  color: var(--text-main);
+  margin-bottom: var(--space-4);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); }
+h4 { font-size: var(--text-lg); }
+h5 { font-size: var(--text-base); }
+h6 { font-size: var(--text-sm); font-weight: var(--font-bold); }
+
+/**
+ * Paragraph & Text Elements
+ */
+
+p {
+  margin-bottom: var(--space-4);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/**
+ * List Styles
+ */
+
+ul, ol {
+  list-style-position: inside;
+  margin-bottom: var(--space-4);
+}
+
+/**
+ * Code & Preformatted Text
+ */
+
+code, pre {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+code {
+  background-color: var(--bg-hover);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+}
+
+pre {
+  background-color: var(--bg-hover);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+}
+
+/**
+ * Image & Media Elements
+ */
+
+img, svg, video, canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/**
+ * Form Elements Base Styles
+ */
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+/**
+ * Table Base Styles
+ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/**
+ * Accessibility - Focus Visible
+ * Ensure keyboard navigation is clearly visible
+ */
+
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/**
+ * Selection Styles
+ * Custom text selection color
+ */
+
+::selection {
+  background-color: var(--primary-light);
+  color: var(--text-main);
+}
+
+::-moz-selection {
+  background-color: var(--primary-light);
+  color: var(--text-main);
+}
+
+/**
+ * Scrollbar Styles (Webkit browsers)
+ * Modern, minimal scrollbar design
+ */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--bg-hover);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-dark);
+  border-radius: var(--radius-full);
+  border: 3px solid var(--bg-hover);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+
+/* ============================================================================
+   UTILITY CLASSES - Common patterns
+   ============================================================================ */
+
+/**
+ * Screen Reader Only
+ * Hide content visually but keep it accessible to screen readers
+ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/**
+ * Container
+ * Centered content container with max-width
+ */
+
+.container {
+  width: 100%;
+  max-width: var(--max-content-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+/**
+ * Text Utilities
+ */
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-danger { color: var(--danger); }
+
+/**
+ * Display Utilities
+ */
+
+.hidden { display: none !important; }
+.block { display: block; }
+.inline-block { display: inline-block; }
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+.grid { display: grid; }
+
+/* End of design-tokens.css */
+
+/* Made with Bob */

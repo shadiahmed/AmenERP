@@ -1,0 +1,710 @@
+/**
+ * AmenERP Main Layout Architecture
+ * 
+ * This file defines the core application shell structure using modern CSS Grid
+ * and Flexbox layouts. It creates a responsive, professional ERP interface with
+ * a fixed sidebar navigation and fluid main content area that adapts seamlessly
+ * across all viewport sizes.
+ * 
+ * Layout Structure:
+ * - Desktop: Two-column grid (sidebar + main content)
+ * - Tablet/Mobile: Single-column with collapsible sidebar overlay
+ * - Sidebar: Fixed navigation with smooth transitions
+ * - Main Content: Fluid, scrollable content area
+ * 
+ * @package AmenERP
+ * @author Bob - Expert Principal Frontend Engineer
+ * @version 2.0.0
+ */
+
+/* ============================================================================
+   APPLICATION SHELL - Grid Layout System
+   ============================================================================ */
+
+/**
+ * Primary Layout Container
+ * Uses CSS Grid to create a two-column layout on desktop
+ * Automatically collapses to single column on mobile devices
+ */
+
+.erp-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: 1fr;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  position: relative;
+}
+
+/* ============================================================================
+   SIDEBAR NAVIGATION - Premium Dark Theme
+   ============================================================================ */
+
+/**
+ * Sidebar Container
+ * Fixed-width navigation panel with dark theme
+ * Includes smooth transitions for mobile overlay behavior
+ */
+
+.sidebar {
+  background-color: var(--bg-sidebar);
+  color: var(--text-on-dark);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: var(--z-fixed);
+  transition: transform var(--duration-base) var(--ease-smooth);
+  
+  /* Custom scrollbar for dark sidebar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(248, 250, 252, 0.2) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(248, 250, 252, 0.2);
+  border-radius: var(--radius-full);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(248, 250, 252, 0.3);
+}
+
+/**
+ * Sidebar Header
+ * Branding area with logo and version information
+ */
+
+.sidebar-header {
+  padding: var(--space-6) var(--space-5);
+  border-bottom: 1px solid rgba(248, 250, 252, 0.1);
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.1) 0%,
+    transparent 100%
+  );
+}
+
+.sidebar-logo {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-on-dark);
+  margin-bottom: var(--space-2);
+  letter-spacing: var(--tracking-tight);
+  background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar-version {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  opacity: 0.7;
+}
+
+/**
+ * Sidebar Navigation
+ * Main navigation menu with hover and active states
+ */
+
+.sidebar-nav {
+  flex: 1;
+  padding: var(--space-4) 0;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  margin-bottom: var(--space-1);
+}
+
+/**
+ * Navigation Links
+ * Interactive menu items with icon + text layout
+ * Features smooth transitions and visual feedback
+ */
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  color: var(--text-on-dark);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  transition: var(--transition-base);
+  position: relative;
+  border-left: 3px solid transparent;
+  opacity: 0.85;
+}
+
+.nav-link:hover {
+  background-color: rgba(248, 250, 252, 0.08);
+  opacity: 1;
+  text-decoration: none;
+  border-left-color: var(--primary);
+}
+
+.nav-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  opacity: 1;
+}
+
+/**
+ * Active Navigation State
+ * Highlights the current page in the navigation
+ */
+
+.nav-link.active {
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.15) 0%,
+    transparent 100%
+  );
+  border-left-color: var(--primary);
+  color: #ffffff;
+  opacity: 1;
+  font-weight: var(--font-semibold);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    var(--primary) 0%,
+    var(--accent) 100%
+  );
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+}
+
+/**
+ * Navigation Icons
+ * Emoji icons with consistent sizing
+ */
+
+.nav-icon {
+  font-size: var(--text-xl);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  filter: grayscale(0.3);
+  transition: var(--transition-fast);
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon {
+  filter: grayscale(0);
+  transform: scale(1.1);
+}
+
+/**
+ * Navigation Text
+ * Label text for menu items
+ */
+
+.nav-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================================
+   MAIN CONTENT AREA - Fluid Layout
+   ============================================================================ */
+
+/**
+ * Main Content Container
+ * Scrollable content area with proper spacing and overflow handling
+ */
+
+.main-content {
+  background-color: var(--bg-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-6);
+  position: relative;
+}
+
+/**
+ * Content Wrapper
+ * Optional inner container for content width constraints
+ */
+
+.content-wrapper {
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+}
+
+/**
+ * Page Header
+ * Standard page title and description area
+ */
+
+.page-header {
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.page-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--text-main);
+  margin-bottom: var(--space-2);
+  line-height: var(--leading-tight);
+}
+
+.page-description {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  line-height: var(--leading-normal);
+  margin-bottom: 0;
+}
+
+/**
+ * Section Headers
+ * Subsection titles within pages
+ */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  gap: var(--space-4);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-main);
+  margin-bottom: 0;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ============================================================================
+   MOBILE MENU TOGGLE - Responsive Navigation Control
+   ============================================================================ */
+
+/**
+ * Mobile Menu Toggle Button
+ * Hamburger menu button for mobile devices
+ * Hidden on desktop, visible on mobile
+ */
+
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: calc(var(--z-fixed) + 10);
+  width: 48px;
+  height: 48px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-2xl);
+  color: var(--text-main);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-base);
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu-toggle:hover {
+  background-color: var(--bg-hover);
+  box-shadow: var(--shadow-lg);
+  transform: scale(1.05);
+}
+
+.mobile-menu-toggle:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================================
+   DASHBOARD METRICS GRID - Auto-fit Responsive Cards
+   ============================================================================ */
+
+/**
+ * Metrics Grid Container
+ * Responsive grid for dashboard stat cards
+ * Automatically adjusts columns based on available space
+ */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+/**
+ * Metric Card
+ * Individual stat card with icon, value, and label
+ */
+
+.metric-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.metric-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--border-dark);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-icon {
+  font-size: var(--text-3xl);
+  line-height: 1;
+}
+
+.metric-value {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--text-main);
+  line-height: var(--leading-tight);
+}
+
+.metric-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.metric-change {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.metric-change.positive {
+  color: var(--success);
+}
+
+.metric-change.negative {
+  color: var(--danger);
+}
+
+/* ============================================================================
+   CONTENT GRID - General Purpose Layout Grid
+   ============================================================================ */
+
+/**
+ * Content Grid
+ * Flexible grid system for various content layouts
+ */
+
+.content-grid {
+  display: grid;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.content-grid.cols-2 {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+}
+
+.content-grid.cols-3 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.content-grid.cols-4 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* ============================================================================
+   RESPONSIVE BREAKPOINTS - Mobile-First Approach
+   ============================================================================ */
+
+/**
+ * Tablet Breakpoint (max-width: 1024px)
+ * Adjust layout for medium-sized screens
+ */
+
+@media (max-width: 1024px) {
+  .erp-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-2xl);
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    padding: var(--space-6) var(--space-4);
+    padding-top: calc(var(--space-16) + var(--space-4));
+  }
+  
+  .mobile-menu-toggle {
+    display: flex;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-4);
+  }
+  
+  .content-grid.cols-2,
+  .content-grid.cols-3,
+  .content-grid.cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/**
+ * Mobile Breakpoint (max-width: 640px)
+ * Optimize for small mobile devices
+ */
+
+@media (max-width: 640px) {
+  .main-content {
+    padding: var(--space-4) var(--space-3);
+    padding-top: calc(var(--space-16) + var(--space-2));
+  }
+  
+  .page-header {
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
+  }
+  
+  .page-title {
+    font-size: var(--text-2xl);
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  
+  .section-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .section-actions > * {
+    flex: 1;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  
+  .metric-card {
+    padding: var(--space-4);
+  }
+  
+  .metric-value {
+    font-size: var(--text-2xl);
+  }
+  
+  .sidebar {
+    width: 85vw;
+    max-width: 320px;
+  }
+  
+  .mobile-menu-toggle {
+    width: 44px;
+    height: 44px;
+    top: var(--space-3);
+    left: var(--space-3);
+  }
+}
+
+/**
+ * Large Desktop Breakpoint (min-width: 1440px)
+ * Enhanced spacing for large screens
+ */
+
+@media (min-width: 1440px) {
+  .main-content {
+    padding: var(--space-10) var(--space-8);
+  }
+  
+  .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+}
+
+/* ============================================================================
+   MOBILE SIDEBAR OVERLAY - Backdrop for Mobile Menu
+   ============================================================================ */
+
+/**
+ * Sidebar Backdrop
+ * Semi-transparent overlay when sidebar is open on mobile
+ * Clicking it closes the sidebar
+ */
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+  z-index: calc(var(--z-fixed) - 1);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-smooth);
+}
+
+.sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-backdrop {
+    display: block;
+    pointer-events: none;
+  }
+  
+  .sidebar-backdrop.active {
+    pointer-events: auto;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES - Optimized for Printing
+   ============================================================================ */
+
+@media print {
+  .sidebar,
+  .mobile-menu-toggle,
+  .sidebar-backdrop {
+    display: none !important;
+  }
+  
+  .erp-layout {
+    display: block;
+  }
+  
+  .main-content {
+    padding: 0;
+  }
+  
+  .metric-card,
+  .page-header {
+    break-inside: avoid;
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================================================ */
+
+/**
+ * Reduced Motion Support
+ * Respect user's motion preferences
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/**
+ * High Contrast Mode Support
+ * Ensure visibility in high contrast mode
+ */
+
+@media (prefers-contrast: high) {
+  .nav-link {
+    border-left-width: 4px;
+  }
+  
+  .nav-link.active {
+    border-left-width: 5px;
+  }
+  
+  .metric-card {
+    border-width: 2px;
+  }
+}
+
+/**
+ * Focus Visible Enhancement
+ * Clear focus indicators for keyboard navigation
+ */
+
+.sidebar:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* End of main-layout.css */
+
+/* Made with Bob */

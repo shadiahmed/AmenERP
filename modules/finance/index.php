@@ -3,41 +3,64 @@
 declare(strict_types=1);
 
 /**
- * Finance Module - Main Dashboard
+ * Finance Module - Central Ledger Console
  * 
- * Displays financial overview with:
- * - Summary metrics (Available Money, Monthly Inflow/Outflow)
- * - Quick action buttons for recording transactions
- * - Audit history of recent transactions
+ * Comprehensive financial management interface with double-entry accounting,
+ * real-time metrics, and transaction recording capabilities.
+ *
+ * Features:
+ * - Real-time financial metrics dashboard
+ * - Double-entry accounting ledger
+ * - Income and expense recording with modal forms
+ * - Account balance tracking (Assets, Liabilities, Equity)
+ * - Recent transaction audit history
+ * - CSRF protection
+ * - Responsive mobile-first design
  * 
  * @package AmenERP\Modules\Finance
  * @author Bob
- * @version 1.0.0
+ * @version 2.0.0
  */
 
-// Initialize the Finance Model
+// ============================================================================
+// BOOTSTRAP: Core Configuration & Dependencies
+// ============================================================================
+
+/**
+ * Initialize the Finance Model
+ */
 require_once __DIR__ . '/models/FinanceModel.php';
 $financeModel = new FinanceModel();
 
-// Fetch all accounts categorized by type
+/**
+ * Fetch all accounts categorized by type
+ */
 $accounts = $financeModel->getAccounts();
 
-// Calculate Available Money (sum of all asset accounts)
+/**
+ * Calculate Available Money (sum of all asset accounts)
+ */
 $availableMoney = 0;
 foreach ($accounts['asset'] as $asset) {
     $availableMoney += $asset['balance'];
 }
 
-// Calculate Monthly Inflow and Outflow using real-time data
+/**
+ * Calculate Monthly Inflow and Outflow using real-time data
+ */
 $currentMonth = date('Y-m');
 $monthlyMetrics = $financeModel->getMonthlyMetrics($currentMonth);
 $monthlyInflow = $monthlyMetrics['inflow'];
 $monthlyOutflow = $monthlyMetrics['outflow'];
 
-// Fetch recent ledger entries for audit history
+/**
+ * Fetch recent ledger entries for audit history
+ */
 $recentLedger = $financeModel->getRecentLedger(20);
 
-// Group ledger entries by transaction for cleaner display
+/**
+ * Group ledger entries by transaction for cleaner display
+ */
 $transactions = [];
 foreach ($recentLedger as $entry) {
     $txId = $entry['transaction_id'];
@@ -53,96 +76,166 @@ foreach ($recentLedger as $entry) {
     $transactions[$txId]['entries'][] = $entry;
 }
 
-// Generate CSRF token for forms
+/**
+ * Generate CSRF token for forms
+ */
 $csrfToken = Csrf::generateToken();
 
 ?>
 
-<!-- Content Header -->
-<div class="content-header">
-    <h2>Finance Dashboard</h2>
-    <div class="breadcrumb">
-        <span>Finance</span>
-    </div>
-</div>
-
-<!-- Summary Matrix -->
-<div class="grid grid-cols-3">
-    <div class="card">
-        <div class="card-body">
-            <h3 class="card-stat-label">💰 Available Money</h3>
-            <p class="card-stat-value text-primary">
-                $<?php echo number_format($availableMoney, 2); ?>
-            </p>
-            <p class="card-stat-description">
-                Total liquid assets (Cash + Bank)
-            </p>
+<div class="erp-container">
+    <!-- Flash Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success">
+            <?php
+            echo htmlspecialchars($_SESSION['success'], ENT_QUOTES, 'UTF-8');
+            unset($_SESSION['success']);
+            ?>
         </div>
-    </div>
+    <?php endif; ?>
     
-    <div class="card">
-        <div class="card-body">
-            <h3 class="card-stat-label">📈 Total Inflow This Month</h3>
-            <p class="card-stat-value text-success">
-                $<?php echo number_format($monthlyInflow, 2); ?>
-            </p>
-            <p class="card-stat-description">
-                Income received in <?php echo date('F Y'); ?>
-            </p>
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-error">
+            <?php
+            echo htmlspecialchars($_SESSION['error'], ENT_QUOTES, 'UTF-8');
+            unset($_SESSION['error']);
+            ?>
         </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-body">
-            <h3 class="card-stat-label">📉 Total Outflow This Month</h3>
-            <p class="card-stat-value text-error">
-                $<?php echo number_format($monthlyOutflow, 2); ?>
-            </p>
-            <p class="card-stat-description">
-                Expenses paid in <?php echo date('F Y'); ?>
-            </p>
-        </div>
-    </div>
-</div>
+    <?php endif; ?>
 
-<!-- Friendly Actions Area -->
-<div class="card">
-    <div class="card-header">
-        <h3>Quick Actions</h3>
-    </div>
-    <div class="card-body">
-        <div class="finance-actions">
-            <button type="button" class="btn btn-danger" data-action="open-expense-modal">
-                <span>💸</span>
-                <span>Record Money Out (Expense)</span>
-            </button>
-            <button type="button" class="btn btn-success" data-action="open-income-modal">
-                <span>💵</span>
-                <span>Record Money In (Income)</span>
-            </button>
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Finance & Ledger Console</h1>
+            <p class="page-subtitle">Double-entry accounting and financial management</p>
         </div>
     </div>
-</div>
 
-<!-- Audit History -->
-<div class="card">
-    <div class="card-header">
-        <h3>Recent Activity</h3>
+    <!-- Financial Metrics Dashboard -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon">💰</div>
+            <div class="metric-content">
+                <div class="metric-label">Available Money</div>
+                <div class="metric-value"><?php echo '$' . number_format($availableMoney, 2); ?></div>
+                <div class="metric-subtitle">Total Liquid Assets</div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">📈</div>
+            <div class="metric-content">
+                <div class="metric-label">Monthly Inflow</div>
+                <div class="metric-value" style="color: var(--success);"><?php echo '$' . number_format($monthlyInflow, 2); ?></div>
+                <div class="metric-subtitle"><?php echo date('F Y'); ?></div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">📉</div>
+            <div class="metric-content">
+                <div class="metric-label">Monthly Outflow</div>
+                <div class="metric-value" style="color: var(--danger);"><?php echo '$' . number_format($monthlyOutflow, 2); ?></div>
+                <div class="metric-subtitle"><?php echo date('F Y'); ?></div>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
+
+    <!-- Quick Actions -->
+    <section class="card">
+        <div class="card-header">
+            <h2 class="card-title">Quick Actions</h2>
+        </div>
+        <div class="card-body">
+            <div class="btn-group-horizontal">
+                <button type="button" class="btn btn-danger" id="openExpenseModalBtn">
+                    <span class="btn-icon">💸</span>
+                    Record Money Out (Expense)
+                </button>
+                <button type="button" class="btn btn-success" id="openIncomeModalBtn">
+                    <span class="btn-icon">💵</span>
+                    Record Money In (Income)
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Account Chart Tracking Ledger -->
+    <section class="card">
+        <div class="card-header">
+            <h2 class="card-title">Account Chart Summary</h2>
+        </div>
+        <div class="card-body">
+            <div class="account-chart-grid">
+                <!-- Assets Column -->
+                <div class="account-column">
+                    <h3 class="account-column-title">Assets</h3>
+                    <div class="account-list">
+                        <?php foreach ($accounts['asset'] as $asset): ?>
+                            <div class="account-item">
+                                <div class="account-name"><?php echo htmlspecialchars($asset['name'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div class="account-balance"><?php echo '$' . number_format($asset['balance'], 2); ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- Liabilities Column -->
+                <div class="account-column">
+                    <h3 class="account-column-title">Liabilities</h3>
+                    <div class="account-list">
+                        <?php if (empty($accounts['liability'])): ?>
+                            <div class="account-item-empty">No liabilities</div>
+                        <?php else: ?>
+                            <?php foreach ($accounts['liability'] as $liability): ?>
+                                <div class="account-item">
+                                    <div class="account-name"><?php echo htmlspecialchars($liability['name'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                    <div class="account-balance"><?php echo '$' . number_format($liability['balance'], 2); ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Equity Column -->
+                <div class="account-column">
+                    <h3 class="account-column-title">Equity</h3>
+                    <div class="account-list">
+                        <?php if (empty($accounts['equity'])): ?>
+                            <div class="account-item-empty">No equity accounts</div>
+                        <?php else: ?>
+                            <?php foreach ($accounts['equity'] as $equity): ?>
+                                <div class="account-item">
+                                    <div class="account-name"><?php echo htmlspecialchars($equity['name'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                    <div class="account-balance"><?php echo '$' . number_format($equity['balance'], 2); ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Transaction Audit History -->
+    <section class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Transaction History</h2>
+        </div>
+        
         <?php if (empty($transactions)): ?>
-            <p class="text-secondary text-center p-xl">
-                No transactions recorded yet. Use the buttons above to record your first transaction.
-            </p>
+            <div class="empty-state">
+                <p>No transactions recorded yet. Use the buttons above to record your first transaction.</p>
+            </div>
         <?php else: ?>
-            <div class="table-container">
-                <table>
+            <div class="table-responsive">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th>Description</th>
                             <th>Activity</th>
-                            <th>Amount</th>
+                            <th class="text-right">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -177,7 +270,7 @@ $csrfToken = Csrf::generateToken();
                             // Create friendly activity description
                             if ($isExpense) {
                                 $activity = "Paid {$toAccount} from {$fromAccount}";
-                                $amountClass = 'text-error';
+                                $amountClass = 'text-danger';
                                 $amountPrefix = '-';
                             } elseif ($isIncome) {
                                 $activity = "Received {$fromAccount} to {$toAccount}";
@@ -185,16 +278,16 @@ $csrfToken = Csrf::generateToken();
                                 $amountPrefix = '+';
                             } else {
                                 $activity = "Transferred from {$fromAccount} to {$toAccount}";
-                                $amountClass = 'text-secondary';
+                                $amountClass = '';
                                 $amountPrefix = '';
                             }
                             ?>
                             <tr>
-                                <td><?php echo htmlspecialchars(date('M d, Y', strtotime($transaction['date']))); ?></td>
-                                <td><?php echo htmlspecialchars($transaction['description']); ?></td>
-                                <td><?php echo htmlspecialchars($activity); ?></td>
-                                <td class="<?php echo $amountClass; ?> finance-amount">
-                                    <?php echo $amountPrefix; ?>$<?php echo number_format($amount, 2); ?>
+                                <td><?php echo date('M d, Y', strtotime($transaction['date'])); ?></td>
+                                <td><strong><?php echo htmlspecialchars($transaction['description'], ENT_QUOTES, 'UTF-8'); ?></strong></td>
+                                <td><?php echo htmlspecialchars($activity, ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="text-right <?php echo $amountClass; ?>">
+                                    <strong><?php echo $amountPrefix; ?>$<?php echo number_format($amount, 2); ?></strong>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -202,179 +295,285 @@ $csrfToken = Csrf::generateToken();
                 </table>
             </div>
         <?php endif; ?>
-    </div>
+    </section>
 </div>
 
 <!-- Money Out Modal (Expense) -->
-<div id="expenseModal" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>💸 Record Money Out (Expense)</h3>
-            <button type="button" class="btn-close" data-action="close-expense-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-            <form id="expenseForm" method="POST" action="<?php echo BASE_URL; ?>/finance/record-expense">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-                
-                <div class="form-group">
-                    <label for="expense_amount">Amount *</label>
-                    <input 
-                        type="number" 
-                        id="expense_amount" 
-                        name="amount" 
-                        step="0.01" 
-                        min="0.01" 
-                        required 
-                        placeholder="0.00"
-                        class="form-input"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="paid_from">Paid From *</label>
-                    <select id="paid_from" name="from_account_id" required class="form-select">
-                        <option value="">Select account...</option>
-                        <?php foreach ($accounts['asset'] as $asset): ?>
-                            <option value="<?php echo $asset['id']; ?>">
-                                <?php echo htmlspecialchars($asset['name']); ?> 
-                                (Balance: $<?php echo number_format($asset['balance'], 2); ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="expense_category">Expense Category *</label>
-                    <select id="expense_category" name="to_account_id" required class="form-select">
-                        <option value="">Select category...</option>
-                        <?php foreach ($accounts['expense'] as $expense): ?>
-                            <option value="<?php echo $expense['id']; ?>">
-                                <?php echo htmlspecialchars($expense['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="expense_description">Description *</label>
-                    <input 
-                        type="text" 
-                        id="expense_description" 
-                        name="description" 
-                        required 
-                        placeholder="e.g., Monthly electricity bill"
-                        maxlength="500"
-                        class="form-input"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="expense_date">Date *</label>
-                    <input 
-                        type="date" 
-                        id="expense_date" 
-                        name="date" 
-                        required 
-                        value="<?php echo date('Y-m-d'); ?>"
-                        max="<?php echo date('Y-m-d'); ?>"
-                        class="form-input"
-                    >
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-outline" data-action="close-expense-modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Record Expense</button>
-                </div>
-            </form>
+<div id="expenseModal" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">💸 Record Money Out (Expense)</h3>
+                <button type="button" class="modal-close" id="closeExpenseModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="expenseForm" class="form" method="POST" action="<?php echo BASE_URL; ?>/finance/record-expense">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                    
+                    <div class="form-group">
+                        <label for="expense_amount" class="form-label">Amount <span class="required">*</span></label>
+                        <input 
+                            type="number" 
+                            id="expense_amount" 
+                            name="amount" 
+                            step="0.01" 
+                            min="0.01" 
+                            required 
+                            placeholder="0.00"
+                            class="form-input"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paid_from" class="form-label">Paid From <span class="required">*</span></label>
+                        <select id="paid_from" name="from_account_id" required class="form-select">
+                            <option value="">Select account...</option>
+                            <?php foreach ($accounts['asset'] as $asset): ?>
+                                <option value="<?php echo $asset['id']; ?>">
+                                    <?php echo htmlspecialchars($asset['name'], ENT_QUOTES, 'UTF-8'); ?> 
+                                    (Balance: $<?php echo number_format($asset['balance'], 2); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expense_category" class="form-label">Expense Category <span class="required">*</span></label>
+                        <select id="expense_category" name="to_account_id" required class="form-select">
+                            <option value="">Select category...</option>
+                            <?php foreach ($accounts['expense'] as $expense): ?>
+                                <option value="<?php echo $expense['id']; ?>">
+                                    <?php echo htmlspecialchars($expense['name'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expense_description" class="form-label">Description <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            id="expense_description" 
+                            name="description" 
+                            required 
+                            placeholder="e.g., Monthly electricity bill"
+                            maxlength="500"
+                            class="form-input"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expense_date" class="form-label">Date <span class="required">*</span></label>
+                        <input 
+                            type="date" 
+                            id="expense_date" 
+                            name="date" 
+                            required 
+                            value="<?php echo date('Y-m-d'); ?>"
+                            max="<?php echo date('Y-m-d'); ?>"
+                            class="form-input"
+                        >
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelExpenseBtn">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Record Expense</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Money In Modal (Income) -->
-<div id="incomeModal" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>💵 Record Money In (Income)</h3>
-            <button type="button" class="btn-close" data-action="close-income-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-            <form id="incomeForm" method="POST" action="<?php echo BASE_URL; ?>/finance/record-income">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-                
-                <div class="form-group">
-                    <label for="income_amount">Amount *</label>
-                    <input 
-                        type="number" 
-                        id="income_amount" 
-                        name="amount" 
-                        step="0.01" 
-                        min="0.01" 
-                        required 
-                        placeholder="0.00"
-                        class="form-input"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="deposited_to">Deposited To *</label>
-                    <select id="deposited_to" name="to_account_id" required class="form-select">
-                        <option value="">Select account...</option>
-                        <?php foreach ($accounts['asset'] as $asset): ?>
-                            <option value="<?php echo $asset['id']; ?>">
-                                <?php echo htmlspecialchars($asset['name']); ?> 
-                                (Balance: $<?php echo number_format($asset['balance'], 2); ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="income_source">Income Source *</label>
-                    <select id="income_source" name="from_account_id" required class="form-select">
-                        <option value="">Select source...</option>
-                        <?php foreach ($accounts['income'] as $income): ?>
-                            <option value="<?php echo $income['id']; ?>">
-                                <?php echo htmlspecialchars($income['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="income_description">Description *</label>
-                    <input 
-                        type="text" 
-                        id="income_description" 
-                        name="description" 
-                        required 
-                        placeholder="e.g., Product sales for May"
-                        maxlength="500"
-                        class="form-input"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="income_date">Date *</label>
-                    <input 
-                        type="date" 
-                        id="income_date" 
-                        name="date" 
-                        required 
-                        value="<?php echo date('Y-m-d'); ?>"
-                        max="<?php echo date('Y-m-d'); ?>"
-                        class="form-input"
-                    >
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-outline" data-action="close-income-modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Record Income</button>
-                </div>
-            </form>
+<div id="incomeModal" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">💵 Record Money In (Income)</h3>
+                <button type="button" class="modal-close" id="closeIncomeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="incomeForm" class="form" method="POST" action="<?php echo BASE_URL; ?>/finance/record-income">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                    
+                    <div class="form-group">
+                        <label for="income_amount" class="form-label">Amount <span class="required">*</span></label>
+                        <input 
+                            type="number" 
+                            id="income_amount" 
+                            name="amount" 
+                            step="0.01" 
+                            min="0.01" 
+                            required 
+                            placeholder="0.00"
+                            class="form-input"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="deposited_to" class="form-label">Deposited To <span class="required">*</span></label>
+                        <select id="deposited_to" name="to_account_id" required class="form-select">
+                            <option value="">Select account...</option>
+                            <?php foreach ($accounts['asset'] as $asset): ?>
+                                <option value="<?php echo $asset['id']; ?>">
+                                    <?php echo htmlspecialchars($asset['name'], ENT_QUOTES, 'UTF-8'); ?> 
+                                    (Balance: $<?php echo number_format($asset['balance'], 2); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="income_source" class="form-label">Income Source <span class="required">*</span></label>
+                        <select id="income_source" name="from_account_id" required class="form-select">
+                            <option value="">Select source...</option>
+                            <?php foreach ($accounts['income'] as $income): ?>
+                                <option value="<?php echo $income['id']; ?>">
+                                    <?php echo htmlspecialchars($income['name'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="income_description" class="form-label">Description <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            id="income_description" 
+                            name="description" 
+                            required 
+                            placeholder="e.g., Product sales for May"
+                            maxlength="500"
+                            class="form-input"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="income_date" class="form-label">Date <span class="required">*</span></label>
+                        <input 
+                            type="date" 
+                            id="income_date" 
+                            name="date" 
+                            required 
+                            value="<?php echo date('Y-m-d'); ?>"
+                            max="<?php echo date('Y-m-d'); ?>"
+                            class="form-input"
+                        >
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelIncomeBtn">Cancel</button>
+                        <button type="submit" class="btn btn-success">Record Income</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Made with Bob -->
+<!-- Finance Module JavaScript -->
+<script type="module">
+    /**
+     * Finance Module - Client-Side Logic
+     * Handles modal management for income and expense recording
+     */
 
+    // ====================================================================
+    // MODAL MANAGEMENT
+    // ====================================================================
+    
+    // Expense Modal Elements
+    const expenseModal = document.getElementById('expenseModal');
+    const openExpenseModalBtn = document.getElementById('openExpenseModalBtn');
+    const closeExpenseModalBtn = document.getElementById('closeExpenseModalBtn');
+    const cancelExpenseBtn = document.getElementById('cancelExpenseBtn');
+
+    // Income Modal Elements
+    const incomeModal = document.getElementById('incomeModal');
+    const openIncomeModalBtn = document.getElementById('openIncomeModalBtn');
+    const closeIncomeModalBtn = document.getElementById('closeIncomeModalBtn');
+    const cancelIncomeBtn = document.getElementById('cancelIncomeBtn');
+
+    /**
+     * Open Expense Modal
+     */
+    if (openExpenseModalBtn) {
+        openExpenseModalBtn.addEventListener('click', () => {
+            expenseModal.classList.add('active');
+        });
+    }
+
+    /**
+     * Close Expense Modal
+     */
+    function closeExpenseModal() {
+        expenseModal.classList.remove('active');
+        document.getElementById('expenseForm').reset();
+    }
+
+    if (closeExpenseModalBtn) {
+        closeExpenseModalBtn.addEventListener('click', closeExpenseModal);
+    }
+
+    if (cancelExpenseBtn) {
+        cancelExpenseBtn.addEventListener('click', closeExpenseModal);
+    }
+
+    /**
+     * Open Income Modal
+     */
+    if (openIncomeModalBtn) {
+        openIncomeModalBtn.addEventListener('click', () => {
+            incomeModal.classList.add('active');
+        });
+    }
+
+    /**
+     * Close Income Modal
+     */
+    function closeIncomeModal() {
+        incomeModal.classList.remove('active');
+        document.getElementById('incomeForm').reset();
+    }
+
+    if (closeIncomeModalBtn) {
+        closeIncomeModalBtn.addEventListener('click', closeIncomeModal);
+    }
+
+    if (cancelIncomeBtn) {
+        cancelIncomeBtn.addEventListener('click', closeIncomeModal);
+    }
+
+    // Close modals on outside click
+    if (expenseModal) {
+        expenseModal.addEventListener('click', (e) => {
+            if (e.target === expenseModal) {
+                closeExpenseModal();
+            }
+        });
+    }
+
+    if (incomeModal) {
+        incomeModal.addEventListener('click', (e) => {
+            if (e.target === incomeModal) {
+                closeIncomeModal();
+            }
+        });
+    }
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (expenseModal.classList.contains('active')) {
+                closeExpenseModal();
+            }
+            if (incomeModal.classList.contains('active')) {
+                closeIncomeModal();
+            }
+        }
+    });
+</script>
+
+<?php
 // Made with Bob

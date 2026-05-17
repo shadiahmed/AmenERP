@@ -95,7 +95,8 @@ INSERT INTO `accounts` (`name`, `type`, `balance`) VALUES
 
 -- Expenses (costs of doing business)
 ('Utilities Expense', 'expense', 0.00),
-('Inventory Purchase Expense', 'expense', 0.00);
+('Inventory Purchase Expense', 'expense', 0.00),
+('Accounts Payable', 'liability', 0.00);
 
 -- ============================================================================
 -- VERIFICATION QUERIES (for testing)

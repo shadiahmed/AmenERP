@@ -130,7 +130,7 @@ function formatNumber(int $number): string
 }
 ?>
 
-<div class="module-container sales-module">
+<div class="erp-container">
     <?php if (isset($_SESSION['success'])): ?>
         <div class="alert alert-success">
             <?php
@@ -149,8 +149,9 @@ function formatNumber(int $number): string
         </div>
     <?php endif; ?>
 
-    <div class="module-header">
-        <h2>Sales & Invoicing</h2>
+    <div class="page-header">
+        <h1 class="page-title">Sales & Invoicing</h1>
+        <p class="page-subtitle">Process cash and credit sales transactions</p>
     </div>
 
     <!-- Sales Statistics Cards -->
@@ -181,18 +182,20 @@ function formatNumber(int $number): string
     </div>
 
     <!-- New Sales Form -->
-    <section class="form-section">
-        <h3>New Sales Transaction</h3>
-        <p class="form-description">Create a new sales invoice for cash or credit customers. Stock levels will be automatically updated and the transaction will be recorded in your accounts.</p>
+    <section class="card">
+        <div class="card-header">
+            <h2 class="card-title">New Sales Transaction</h2>
+            <p class="card-description">Create a new sales invoice for cash or credit customers. Stock levels will be automatically updated.</p>
+        </div>
         
-        <form id="salesForm" class="sales-form" method="POST" action="<?php echo BASE_URL; ?>/sales/checkout">
+        <form id="salesForm" class="form" method="POST" action="<?php echo BASE_URL; ?>/sales/checkout">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
             
             <!-- Customer Information Section -->
-            <div class="customer-info-section">
-                <h4>Customer Information</h4>
+            <div class="form-section">
+                <h3 class="form-section-title">Customer Information</h3>
                 
-                <div class="form-row">
+                <div class="form-grid">
                     <!-- Payment Type Selector -->
                     <div class="form-group">
                         <label for="payment_type" class="form-label">
@@ -227,7 +230,7 @@ function formatNumber(int $number): string
                     </div>
 
                     <!-- B2B Customer Selector (Hidden by Default) -->
-                    <div class="form-group" id="customer_id_wrapper" style="display: none;">
+                    <div class="form-group hidden" id="customer_id_wrapper">
                         <label for="customer_id" class="form-label">
                             B2B Customer <span class="required">*</span>
                         </label>
@@ -255,13 +258,13 @@ function formatNumber(int $number): string
             </div>
 
             <!-- Sale Items Section -->
-            <div class="sale-items-section">
-                <div class="section-header">
-                    <h4>Sale Items</h4>
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3 class="form-section-title">Sale Items</h3>
                     <button type="button" id="addItemBtn" class="btn btn-secondary">+ Add Item</button>
                 </div>
 
-                <div id="saleItemsContainer">
+                <div id="saleItemsContainer" class="sale-items-container">
                     <!-- Initial item row -->
                     <div class="sale-item-row" data-item-index="0">
                         <div class="form-group">
@@ -335,7 +338,7 @@ function formatNumber(int $number): string
                         <span class="total-label">Total Amount:</span>
                         <span id="totalAmount" class="total-value">$0.00</span>
                     </div>
-                    <div id="credit_warning" style="color: red; font-weight: bold; margin-top: 5px;"></div>
+                    <div id="credit_warning" class="credit-warning"></div>
                 </div>
             </div>
 
@@ -353,8 +356,10 @@ function formatNumber(int $number): string
     </section>
 
     <!-- Recent Sales Orders -->
-    <section class="table-section">
-        <h3>Recent Sales Orders</h3>
+    <section class="card">
+        <div class="card-header">
+            <h2 class="card-title">Recent Sales Orders</h2>
+        </div>
         
         <?php if (empty($recentOrders)): ?>
             <div class="empty-state">
@@ -436,8 +441,8 @@ function formatNumber(int $number): string
         
         if (paymentType === 'credit') {
             // Show customer ID selector, hide customer name input
-            customerIdWrapper.style.display = 'block';
-            customerNameWrapper.style.display = 'none';
+            customerIdWrapper.classList.remove('hidden');
+            customerNameWrapper.classList.add('hidden');
             
             // Update required attributes
             customerIdSelect.setAttribute('required', 'required');
@@ -451,8 +456,8 @@ function formatNumber(int $number): string
             creditWarning.textContent = '';
         } else {
             // Show customer name input, hide customer ID selector
-            customerNameWrapper.style.display = 'block';
-            customerIdWrapper.style.display = 'none';
+            customerNameWrapper.classList.remove('hidden');
+            customerIdWrapper.classList.add('hidden');
             
             // Update required attributes
             customerNameInput.setAttribute('required', 'required');
@@ -514,10 +519,11 @@ function formatNumber(int $number): string
         if (totalAmount > creditAvailable) {
             const shortage = totalAmount - creditAvailable;
             creditWarning.textContent = `⚠️ WARNING: This transaction ($${totalAmount.toFixed(2)}) exceeds available credit ($${creditAvailable.toFixed(2)}) by $${shortage.toFixed(2)}. Transaction will be declined.`;
+            creditWarning.style.color = 'var(--danger)';
         } else if (totalAmount > 0) {
             const remainingCredit = creditAvailable - totalAmount;
             creditWarning.textContent = `✓ Credit approved. Remaining credit after this sale: $${remainingCredit.toFixed(2)}`;
-            creditWarning.style.color = 'green';
+            creditWarning.style.color = 'var(--success)';
         } else {
             creditWarning.textContent = '';
         }
@@ -684,8 +690,8 @@ function formatNumber(int $number): string
         
         // Reset payment type to cash
         paymentTypeSelect.value = 'cash';
-        customerNameWrapper.style.display = 'block';
-        customerIdWrapper.style.display = 'none';
+        customerNameWrapper.classList.remove('hidden');
+        customerIdWrapper.classList.add('hidden');
         customerNameInput.setAttribute('required', 'required');
         customerIdSelect.removeAttribute('required');
         

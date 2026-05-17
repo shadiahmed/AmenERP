@@ -45,12 +45,12 @@ class ProcurementModel
     private const CASH_ACCOUNT_ID = 1;
 
     /**
-     * Accounts Payable Liability Account ID
-     * This account is CREDITED when making credit purchases (increasing liability)
-     *
-     * @var int
+     * Accounts Payable account ID
+     * NOTE: Must exist in modules/finance/database/schema.sql seed.
      */
     private const ACCOUNTS_PAYABLE_ACCOUNT_ID = 6;
+
+
 
     /**
      * Constructor
