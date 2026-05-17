@@ -116,7 +116,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                     </div>
 
                     <!-- Supplier Selection (for credit purchases) -->
-                    <div id="supplier_id_wrapper" class="erp-form-group" style="display: none;">
+                    <div id="supplier_id_wrapper" class="erp-form-group display-none">
                         <label for="supplier_id" class="erp-form-label">Select Supplier *</label>
                         <select
                             id="supplier_id"
