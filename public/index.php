@@ -68,55 +68,59 @@ $router = new Router();
  * Register GET routes
  * Routes point to module view files relative to MODULES_PATH
  */
-$router->get('/', 'home/index.php');           // Dashboard overview
-$router->get('/home', 'home/index.php');      // Dashboard alias for internal navigation
-$router->get('/inventory', 'inventory/index.php'); // Inventory management
-$router->post('/inventory/add', 'inventory/controllers/AddProductController.php'); // Add new product
-$router->post('/inventory/edit/{id}', 'inventory/controllers/EditProductController.php'); // Edit existing product
-$router->post('/inventory/delete/{id}', 'inventory/controllers/DeleteProductController.php'); // Delete product
-$router->get('/api/inventory/search', 'inventory/api/search.php'); // Inventory search API
-$router->get('/api/inventory/check-sku', 'inventory/api/check-sku.php'); // SKU availability check API
+$router->get('/', 'home/index.php');
+$router->get('/home', 'home/index.php');
+$router->get('/inventory', 'inventory/index.php');
+$router->post('/inventory/add', 'inventory/controllers/AddProductController.php');
+$router->post('/inventory/edit/{id}', 'inventory/controllers/EditProductController.php');
+$router->post('/inventory/delete/{id}', 'inventory/controllers/DeleteProductController.php');
+$router->get('/api/inventory/search', 'inventory/api/search.php');
+$router->get('/api/inventory/check-sku', 'inventory/api/check-sku.php');
 
 // Finance Module Routes
-$router->get('/finance', 'finance/index.php'); // Finance dashboard
-$router->post('/finance/record-income', 'finance/controllers/RecordIncomeController.php'); // Record income transaction
-$router->post('/finance/record-expense', 'finance/controllers/RecordExpenseController.php'); // Record expense transaction
+$router->get('/finance', 'finance/index.php');
+$router->post('/finance/record-income', 'finance/controllers/RecordIncomeController.php');
+$router->post('/finance/record-expense', 'finance/controllers/RecordExpenseController.php');
 
 // Sales Module Routes
-$router->get('/sales', 'sales/index.php'); // Main sales dashboard
-$router->post('/sales/checkout', 'sales/controllers/ProcessSaleController.php'); // Process sale checkout
-$router->get('/sales/orders/{id}', 'sales/controllers/ViewInvoiceController.php'); // View specific invoice
+$router->get('/sales', 'sales/index.php');
+$router->post('/sales/checkout', 'sales/controllers/ProcessSaleController.php');
+$router->get('/sales/orders/{id}', 'sales/controllers/ViewInvoiceController.php');
 
 // Procurement Module Routes
-$router->get('/procurement', 'procurement/index.php'); // Main procurement dashboard
-$router->get('/procurement/orders', 'procurement/controllers/ProcessPurchaseController.php'); // View all procurement orders
-$router->get('/procurement/orders/{id}', 'procurement/controllers/ProcessPurchaseController.php'); // View specific procurement order
-$router->post('/procurement/orders', 'procurement/controllers/ProcessPurchaseController.php'); // Place a new procurement order
-$router->post('/procurement/orders/{id}', 'procurement/controllers/ProcessPurchaseController.php'); // Place a new procurement order
+$router->get('/procurement', 'procurement/index.php');
+$router->get('/procurement/orders', 'procurement/controllers/ProcessPurchaseController.php');
+$router->get('/procurement/orders/{id}', 'procurement/controllers/ProcessPurchaseController.php');
+$router->post('/procurement/orders', 'procurement/controllers/ProcessPurchaseController.php');
+$router->post('/procurement/orders/{id}', 'procurement/controllers/ProcessPurchaseController.php');
 
 // HR & PAYROLL MODULE ROUTES
-$router->get('/hr', 'hr/index.php'); // Main HR dashboard
-$router->get('/hr/employees', 'hr/controllers/EmployeesController.php'); // View all employees
-$router->get('/hr/employees/new', 'hr/controllers/EmployeesController.php'); // Create new employee
-$router->get('/hr/employees/{id}', 'hr/controllers/EmployeesController.php'); // View specific employee
-$router->post('/hr/employees', 'hr/controllers/EmployeesController.php'); // Create new employee
-$router->post('/hr/employees/{id}', 'hr/controllers/EmployeesController.php'); // Update employee
-$router->get('/hr/payroll', 'hr/controllers/PayrollController.php'); // View payroll
-$router->get('/hr/payroll/new', 'hr/controllers/PayrollController.php'); // Create new payroll
-$router->get('/hr/payroll/{id}', 'hr/controllers/PayrollController.php'); // View specific payroll
-
-$router->post('/hr/payroll/process', 'hr/controllers/ProcessPayrollController.php'); // Process payroll
+$router->get('/hr', 'hr/index.php');
+$router->get('/hr/employees', 'hr/controllers/EmployeesController.php');
+$router->get('/hr/employees/new', 'hr/controllers/EmployeesController.php');
+$router->get('/hr/employees/{id}', 'hr/controllers/EmployeesController.php');
+$router->post('/hr/employees', 'hr/controllers/EmployeesController.php');
+$router->post('/hr/employees/{id}', 'hr/controllers/EmployeesController.php');
+$router->get('/hr/payroll', 'hr/controllers/PayrollController.php');
+$router->get('/hr/payroll/new', 'hr/controllers/PayrollController.php');
+$router->get('/hr/payroll/{id}', 'hr/controllers/PayrollController.php');
+$router->post('/hr/payroll/process', 'hr/controllers/ProcessPayrollController.php');
 
 // B2B CUSTOMER ACCOUNTS & RECEIVABLES ROUTES
-$router->get('/customers', 'customers/index.php'); // View all customers
-$router->post('/customers/payment/process', 'customers/controllers/ProcessPaymentController.php'); // Process payment
-$router->post('/customers/process-payment', 'customers/controllers/ProcessPaymentController.php'); // Process payment alias for customer form
+$router->get('/customers', 'customers/index.php');
+$router->post('/customers/payment/process', 'customers/controllers/ProcessPaymentController.php');
+$router->post('/customers/process-payment', 'customers/controllers/ProcessPaymentController.php');
 
-$router->get('/suppliers', 'suppliers/index.php'); // View all suppliers
-$router->post('/suppliers/payment/process', 'suppliers/controllers/ProcessPaymentController.php'); // Process payment
-$router->post('/suppliers/process-payment', 'suppliers/controllers/ProcessPaymentController.php'); // Process payment alias for supplier form
+// SUPPLIERS ROUTES
+$router->get('/suppliers', 'suppliers/index.php');
+$router->post('/suppliers/payment/process', 'suppliers/controllers/ProcessPaymentController.php');
+$router->post('/suppliers/process-payment', 'suppliers/controllers/ProcessPaymentController.php');
 
-
+// MANUFACTURING ROUTES
+$router->get('/manufacturing', 'manufacturing/index.php');
+$router->post('/manufacturing/bom', 'manufacturing/controllers/CreateBomController.php');
+$router->post('/manufacturing/process', 'manufacturing/controllers/ProcessProductionController.php');
+$router->post('/manufacturing/process-complete', 'manufacturing/controllers/ProcessProductionController.php');
 
 // ============================================================================
 // 3. OUTPUT BUFFERING EXECUTION
@@ -156,6 +160,18 @@ if (strpos($requestUri, '/inventory') !== false) {
     $pageTitle = 'Inventory Management - ' . APP_NAME;
 } elseif (strpos($requestUri, '/finance') !== false) {
     $pageTitle = 'Finance Dashboard - ' . APP_NAME;
+} elseif (strpos($requestUri, '/sales') !== false) {
+    $pageTitle = 'Sales & Invoicing - ' . APP_NAME;
+} elseif (strpos($requestUri, '/procurement') !== false) {
+    $pageTitle = 'Procurement - ' . APP_NAME;
+} elseif (strpos($requestUri, '/hr') !== false) {
+    $pageTitle = 'Human Resources - ' . APP_NAME;
+} elseif (strpos($requestUri, '/customers') !== false) {
+    $pageTitle = 'Customer Accounts - ' . APP_NAME;
+} elseif (strpos($requestUri, '/suppliers') !== false) {
+    $pageTitle = 'Supplier Management - ' . APP_NAME;
+} elseif (strpos($requestUri, '/manufacturing') !== false) {
+    $pageTitle = 'Manufacturing - ' . APP_NAME;
 } elseif ($requestUri === '/' || strpos($requestUri, '/home') !== false) {
     $pageTitle = 'Dashboard - ' . APP_NAME;
 }
@@ -170,10 +186,10 @@ if (strpos($requestUri, '/inventory') !== false) {
     <meta name="author" content="Bob">
     <title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></title>
     
-    <!-- Global Stylesheet (Zero-Framework CSS) -->
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/css/style.css">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/css/dashboard.css">
-
+    <!-- Modern Design System - Unified CSS Architecture -->
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/design-tokens.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/main-layout.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/components.css">
 </head>
 <body>
     <!-- Enterprise Admin Interface Layout Grid -->
@@ -189,70 +205,68 @@ if (strpos($requestUri, '/inventory') !== false) {
             <nav class="sidebar-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/" 
+                        <a href="<?php echo BASE_URL; ?>/" 
                            class="nav-link <?php echo ($requestUri === '/' || strpos($requestUri, '/home') !== false) ? 'active' : ''; ?>">
                             <span class="nav-icon">📊</span>
                             <span class="nav-text">Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/inventory"
+                        <a href="<?php echo BASE_URL; ?>/inventory"
                            class="nav-link <?php echo (strpos($requestUri, '/inventory') !== false) ? 'active' : ''; ?>">
                             <span class="nav-icon">📦</span>
                             <span class="nav-text">Inventory</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/finance"
+                        <a href="<?php echo BASE_URL; ?>/finance"
                            class="nav-link <?php echo (strpos($requestUri, '/finance') !== false) ? 'active' : ''; ?>">
                             <span class="nav-icon">💰</span>
                             <span class="nav-text">Finance</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/sales"
+                        <a href="<?php echo BASE_URL; ?>/sales"
                            class="nav-link <?php echo (strpos($requestUri, '/sales') !== false) ? 'active' : ''; ?>">
-                            <span class="nav-icon">💰</span>
+                            <span class="nav-icon">🛒</span>
                             <span class="nav-text">Sales</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/procurement"
+                        <a href="<?php echo BASE_URL; ?>/procurement"
                            class="nav-link <?php echo (strpos($requestUri, '/procurement') !== false) ? 'active' : ''; ?>">
-                            <span class="nav-icon">💰</span>
+                            <span class="nav-icon">🛍️</span>
                             <span class="nav-text">Procurement</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/hr"
+                        <a href="<?php echo BASE_URL; ?>/hr"
                            class="nav-link <?php echo (strpos($requestUri, '/hr') !== false) ? 'active' : ''; ?>">
-                            <span class="nav-icon">💰</span>
+                            <span class="nav-icon">👥</span>
                             <span class="nav-text">HR</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/customers"
+                        <a href="<?php echo BASE_URL; ?>/customers"
                            class="nav-link <?php echo (strpos($requestUri, '/customers') !== false) ? 'active' : ''; ?>">
-                            <span class="nav-icon">💰</span>
+                            <span class="nav-icon">🤝</span>
                             <span class="nav-text">Customers</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/suppliers"
+                        <a href="<?php echo BASE_URL; ?>/suppliers"
                            class="nav-link <?php echo (strpos($requestUri, '/suppliers') !== false) ? 'active' : ''; ?>">
-                            <span class="nav-icon">💰</span>
-                            <span class="nav-text">suppliers</span>
+                            <span class="nav-icon">🏢</span>
+                            <span class="nav-text">Suppliers</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/settings"
-                           class="nav-link <?php echo (strpos($requestUri, '/settings') !== false) ? 'active' : ''; ?>">
-                            <span class="nav-icon">💰</span>
-                            <span class="nav-text">Settings</span>
+                        <a href="<?php echo BASE_URL; ?>/manufacturing"
+                           class="nav-link <?php echo (strpos($requestUri, '/manufacturing') !== false) ? 'active' : ''; ?>">
+                            <span class="nav-icon">🏭</span>
+                            <span class="nav-text">Manufacturing</span>
                         </a>
                     </li>
-
-
                 </ul>
             </nav>
         </aside>
@@ -275,8 +289,7 @@ if (strpos($requestUri, '/inventory') !== false) {
     </div>
     
     <!-- Global JavaScript (Zero-Framework ES6+) -->
-    <script src="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/js/main.js" type="module"></script>
-    <script src="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/js/hr-payroll.js" type="module"></script>
+    <script src="<?php echo BASE_URL; ?>/assets/js/app.js" type="module"></script>
 </body>
 </html>
 <?php
