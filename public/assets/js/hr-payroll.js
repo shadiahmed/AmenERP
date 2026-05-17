@@ -1,19 +1,36 @@
 /**
- * Payroll Calculator Module
- * Handles real-time calculation of net pay and total payout
- * Uses event delegation for optimal performance
+ * HR Payroll Calculator Module
+ * 
+ * Handles real-time calculation of net pay and total payout for the HR payroll
+ * processing interface. Uses event delegation for optimal performance with
+ * dynamic employee rows.
+ * 
+ * Features:
+ * - Real-time net pay calculation (base + allowances - deductions)
+ * - Total company payout aggregation
+ * - Form validation before submission
+ * - Confirmation modal with detailed breakdown
+ * - Touch-optimized for mobile devices
+ * 
+ * @package AmenERP
+ * @author Bob - Expert Principal Frontend Engineer
+ * @version 2.0.0
  */
 
 class PayrollCalculator {
     constructor() {
         this.table = document.getElementById('payrollTable');
         this.totalPayoutElement = document.getElementById('totalPayout');
+        this.payrollForm = document.getElementById('payrollForm');
         
         if (!this.table) return;
         
         this.init();
     }
 
+    /**
+     * Initialize the calculator
+     */
     init() {
         // Use event delegation on table body for better performance
         const tbody = this.table.querySelector('tbody');
@@ -27,8 +44,16 @@ class PayrollCalculator {
 
         // Initial calculation
         this.updateTotalPayout();
+
+        // Form submission handler
+        if (this.payrollForm) {
+            this.payrollForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        }
     }
 
+    /**
+     * Handle input change events
+     */
     handleInputChange(input) {
         const employeeId = input.dataset.employeeId;
         const row = input.closest('tr');
@@ -39,6 +64,9 @@ class PayrollCalculator {
         this.updateTotalPayout();
     }
 
+    /**
+     * Calculate net pay for a specific employee row
+     */
     calculateRowNet(row, employeeId) {
         const baseSalary = parseFloat(row.dataset.baseSalary) || 0;
         const allowanceInput = row.querySelector(`.allowance-input[data-employee-id="${employeeId}"]`);
@@ -63,6 +91,9 @@ class PayrollCalculator {
         netPayCell.dataset.calculatedNet = finalNetPay.toString();
     }
 
+    /**
+     * Update the total company payout display
+     */
     updateTotalPayout() {
         if (!this.totalPayoutElement) return;
 
@@ -86,6 +117,84 @@ class PayrollCalculator {
         this.totalPayoutElement.textContent = `$${this.formatCurrency(total)}`;
     }
 
+    /**
+     * Handle form submission with validation and confirmation
+     */
+    handleFormSubmit(e) {
+        const payrollMonth = document.getElementById('payroll_month');
+        
+        // Validate payroll month is selected
+        if (!payrollMonth || !payrollMonth.value) {
+            e.preventDefault();
+            alert('Please select a payroll month.');
+            return false;
+        }
+
+        // Get total payout for confirmation
+        const totalPayout = this.calculateTotalPayout();
+        const employeeCount = this.table.querySelectorAll('tbody tr').length;
+
+        // Format month for display
+        const monthDate = new Date(payrollMonth.value + '-01');
+        const monthName = monthDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+        // Confirmation dialog with detailed information
+        const confirmMessage = `
+═══════════════════════════════════════
+    PAYROLL PROCESSING CONFIRMATION
+═══════════════════════════════════════
+
+Period: ${monthName}
+Employees: ${employeeCount}
+Total Payout: $${this.formatCurrency(totalPayout)}
+
+⚠️  WARNING: This action will:
+• Create financial transactions
+• Update employee payment records
+• Affect accounting balances
+• Cannot be easily undone
+
+═══════════════════════════════════════
+
+Are you sure you want to proceed?
+        `.trim();
+
+        const confirmed = confirm(confirmMessage);
+
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Calculate total payout (helper method)
+     */
+    calculateTotalPayout() {
+        const rows = this.table.querySelectorAll('tbody tr');
+        let total = 0;
+
+        rows.forEach(row => {
+            const employeeId = row.dataset.employeeId;
+            const netPayCell = row.querySelector(`[data-net-pay="${employeeId}"]`);
+            
+            if (netPayCell) {
+                const netValue = netPayCell.dataset.calculatedNet 
+                    ? parseFloat(netPayCell.dataset.calculatedNet)
+                    : parseFloat(row.dataset.baseSalary) || 0;
+                
+                total += netValue;
+            }
+        });
+
+        return total;
+    }
+
+    /**
+     * Format currency with proper locale formatting
+     */
     formatCurrency(value) {
         return value.toLocaleString('en-US', {
             minimumFractionDigits: 2,
@@ -102,28 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Form validation before submission
+ * Export for potential use in other modules
  */
-const payrollForm = document.getElementById('payrollForm');
-if (payrollForm) {
-    payrollForm.addEventListener('submit', (e) => {
-        const payrollMonth = document.getElementById('payroll_month');
-        
-        if (!payrollMonth || !payrollMonth.value) {
-            e.preventDefault();
-            alert('Please select a payroll month.');
-            return false;
-        }
+export default PayrollCalculator;
 
-        // Confirm before processing
-        const confirmed = confirm(
-            `Are you sure you want to process payroll for ${payrollMonth.value}?\n\n` +
-            'This action will create financial transactions and cannot be easily undone.'
-        );
-
-        if (!confirmed) {
-            e.preventDefault();
-            return false;
-        }
-    });
-}
+// Made with Bob
